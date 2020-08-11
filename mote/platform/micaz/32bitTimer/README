@@ -1,0 +1,73 @@
+#contrib/Wisden/tos/lib/ENLTimer/README
+
+#####################################################
+#
+# ENLTimer - Re-implementation of Timer module
+#            & modification of Clock module
+#            for ENL purposes
+#
+# Author : Krishna Chintalapudi, Jeongyeup Paek
+#
+# README by: Jeongyeup Paek
+# Embedded Networks Laboratory
+# University of Southern California
+# Modified: Apr/22/2005
+#
+#####################################################
+
+
+[Overview]
+   This directory contains the "ENLTimer" library. 
+   "ENLTimer" is re-implementation and modification of
+   Timer and Clock modules in TinyOS-1.x.
+   "ENLTimer" provides:
+     - System time running at 4.096KHz, (or 32.768kHz)
+     - Absolute timer (AKA alarm),
+     - Correct timer (1000/1024 problem fixed).
+
+
+
+[Features]
+
+   1. No compatibility issue with the Timer/Clock modules in main TinyOS tree.
+      (You can use Timer and Clock just as before)
+
+   2. Correct Timer : The Timer in TinyOS has 1000/1024 problem:
+                      1ms is not really 1ms, but actually 1000/1024 ms.
+                      "ENLTimer" fixed this.
+
+   3. System Time   : "ENLTimer" provides 32-bit system time running at 4.096KHz.
+                      You can use this for timesync, TDMA, timestamping... etc.
+
+   4. AbsoluteTimer : Since we now have both 'correct time' and 'system time',
+                      we are naturally able to provide absolute timer 
+                      based on the system time.
+                    
+
+
+[Files]
+   - HPLClock.nc  : Modification to TinyOS HPLClock.
+                    Provides system running at 4.096KHz (or 32.768kHz)
+                    by using the overflow interrupt of "Clock0".
+   - LocalTime.nc : Interface for accessing the system time 
+                    provided by HPLClock.
+   - ClockC.nc    : Configuration file which uses HPLClock.nc
+                    and provides LocalTime.nc
+   - TimerM.nc    : Re-implementation of TimerM module in TinyOS.
+                    Provides Absolute timer by using the system time
+                    of ClockC, and also provides *correct* timer.
+   - AbsoluteTimer.nc : Interface for the absolute timer provided by TimerM.
+   - TimerC.nc    : Configuration file which uses TimerM.nc
+                    and provides AbsoluteTimer as well as Timer interface.
+
+
+
+[Usage]
+   - For the normal Timer use, you can use "ENLTimer" just as you use
+     the Timer in main TinyOS tree.
+   - Two additional interfaces are provided :
+     -- LocalTime.nc     : You can use this interface to access the 32-bit system time.
+     -- AbsoluteTimer.nc : You can use this interface to use the absolute timer.
+
+
+

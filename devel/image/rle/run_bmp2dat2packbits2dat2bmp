@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# This scripts 
+# 1. takes a bmp image as input,
+# 2. reads it and convert it to data file,
+# 3. run "PackBits" run-length-encoding with threshold to compress,
+# 4. decode/decompress the encoded/compressed data,
+# 5. and then re-construct the image.
+
+#
+# @author: Jeongyeup Paek (jpaek@enl.usc.edu)
+#
+
+if [ $# -lt 2 ]; then
+    echo ""
+    echo "Usage: $0 <bmp-filename> <thresh> [width height]"
+    echo " ex>   $0 hello.bmp 20"
+    echo " ex>   $0 hello.bmp 20 128 128"
+    echo ""
+    exit 1;
+fi
+
+bfname=$1
+thresh=$2
+if [ $# -eq 4 ]; then
+    width=$3;
+    height=$4;
+else
+    width=128;
+    height=128;
+fi
+shift
+shift
+
+echo ""
+
+./../bmp/bmp2dat $bfname "_tmp_p.dat"
+./packbit_trle -t $thresh "_tmp_p.dat" "_tmp_p_enc.dat"
+./packbit_trle -u "_tmp_p_enc.dat" "_tmp_p_dec.dat"
+./../bmp/dat2bmp -w $width -h $height "_tmp_p_dec.dat" "re$thresh-$bfname"
+
+

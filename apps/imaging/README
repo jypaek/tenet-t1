@@ -1,0 +1,26 @@
+
+DESCRIPTION
+===========
+
+Imaging application is for Tenet nodes with Cyclops device attached.
+It can be used to take, process, and fetch images from cyclops-attached
+Tenet modes. (only MicaZ and Mica2 can have cyclops attached)
+
+
+HOWTO RUN
+=========
+  $./imaging SIZE 128 128 IMAGETYPE COLOR RELIABLE 2 REPORTRATE 20
+
+
+
+HELP MESSAGE
+============
+  $ ./imaging -h
+  $ ./imaging -a
+
+
+Output Example
+==============
+
+
+

@@ -1,0 +1,23 @@
+
+This applications runs a GUI Network Visualization tool.
+It requires at least python 2.4. 
+It shows the Tenet routing tree, sensor value, and each mote value if desired.
+
+To run
+------
+python netviz.py
+
+python pingtree.py
+
+Playing with it
+---------------
+First, it is necessary to set the localhost and port of Tenet transport.
+Default host is localhost and default port is 9998. If configuration is different from default configuration, just go to File|Connect otherwise skip this step.
+
+User can configure to sample light sensors at View|Option and mark View Light Option.
+
+User can configure what mote information to get from the system. Click on Task|Configure Task and mark the desired options.
+
+To send a task, Task|Send Task. It will draw the routing tree. If light sensor option was chosen, the color of the drawn mote will be proportional to the sensor value.
+
+Also, click on a mote to get its value.

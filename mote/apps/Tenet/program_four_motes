@@ -1,0 +1,7 @@
+#!/bin/sh
+
+mtelosb 2 USB1 RSSI_ROUTER=1
+mrtelosb 3 USB2
+mrtelosb 4 USB3
+mrtelosb 5 USB0
+

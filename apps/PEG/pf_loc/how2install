@@ -1,0 +1,13 @@
+
+./autogen.sh
+cd src
+Modify Makefile:
+line 53: 	callbacks.$(OBJEXT) run.$(OBJEXT) draw.$(OBJEXT)
+line 95:    LIBS =  -lpthread -lgthread-2.0 -lplayerc
+line 154: 	callbacks.c callbacks.h \
+	run.c run.h \
+	draw.c draw.h
+make
+Execute graphical part: ./pf g
+
+Requirements: Need gtk library

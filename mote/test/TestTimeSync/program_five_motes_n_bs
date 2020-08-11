@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#mtelosb 2 USB0 CH=23
+mtelosb 2 USB3 CH=23
+mrtelosb 3 USB1 CH=23
+mrtelosb 4 USB2 CH=23
+
+mtelosb 10 USB0 POLLER=1 CH=23
+
+cd ../TOSBase
+pwd
+mtelosb 1 USB6 CH=23
+#mmicaz 1 USB0 CH=23
+cd -
+

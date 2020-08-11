@@ -1,0 +1,51 @@
+
+DESCRIPTION
+===========
+
+DeliveryTest tests the end-to-end packet delivery performance.
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+
+This application tasks all motes to send 'N' packets with attributes
+{sequence number, next-hop, hop-count, and master-address information},
+at regular interval 'I', using transport protocol 'P'. 
+When the application terminates, it shows reliability (packet delivery
+ratio), goodput, list of used next-hops, hop-counts, and masters,
+and how often each of them were used.
+
+This Tenet application can be used to quickly test the reliability and 
+the maximum packet rate that can be used on a deployed Tenet network
+with various transport protocols.
+
+
+HOWTO RUN
+=========
+  $./deliverytest -e [expected #nodes] -r [protocol] -i [interval]
+
+where [protocol] = 0 for best-effort, 
+                   1 for packet transport, and
+                   2 for stream transport.
+
+
+HELP MESSAGE
+============
+  $ ./deliverytest -h
+
+
+Output Example
+==============
+
+# received total of 400 pkts during 10.2 seconds
+# avg. goodput 19.610 pkts/sec
+
+# mote 5: num_pkts 200 (100.0%) received during 10.2 sec (goodput 19.6 pkts/sec)
+#        - nexthop : 1 (100%)
+#        - hopcount: 1 (100%)
+#        - master  : 1 (100%)
+# mote 7: num_pkts 200 (100.0%) received during 10.1 sec (goodput 19.7 pkts/sec)
+#        - nexthop : 1 (100%)
+#        - hopcount: 1 (100%)
+#        - master  : 1 (100%)
+
+
+

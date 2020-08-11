@@ -1,0 +1,190 @@
+An early test program for the sensorIB drivers
+
+Author/Contact: Mohammad Rahimi mhr@cens.ucla.edu
+
+Description:
+
+U call a Sample Channel with a time and the event gives u back the result of the
+channel periodically based on the sampling time.
+
+The interface is called Sample and it is:
+
+    command result_t sample(uint8_t channel,uint8_t channelType,uint8_t interval,uint16_t param);  
+    event result_t dataReady(uint8_t channel,uint8_t channelType,uint16_t data); 
+
+
+-----------------------------------------------------------------------------------------------------------------
+channels types are:
+
+    ANALOG
+    BATTERY,
+    TEMPERATURE
+    HUMIDITY
+    DIGITAL
+    COUNTER
+-----------------------------------------------------------------------------------------------------------------
+channels are:
+
+for type ANALOG:
+    0-6    single ended 0-2.5Volt
+    7-10   differential +-12.5mv
+    11-13  differential 0-2.5V
+
+for DIGITAL :
+    0-5V
+
+for COUNTER,HUMIDITY,TEMPERATURE and BATTERY it is only zero. 
+------------------------------------------------------------------------------------------------------------------
+and for each channel type u can pass the following parameters:
+
+for ANALOG channels:
+
+    SAMPLER_DEFAULT           //only samples 
+    AVERAGE_FOUR              //the result is four time sampled  
+    AVERAGE_EIGHT             //the result is eight time sampled
+    AVERAGE_SIXTEEN           //the result is sixteen time sampled
+    EXCITATION_25             //turn 2.5V excitation
+    EXCITATION_33             //turn 3.3V excitation
+    EXCITATION_50             //turn 5.0V excitation 
+    EXCITATION_ALWAYS_ON      //leave the excitions on (the default is turn on before measurement)
+    DELAY_BEFORE_MEASUREMENT  //when turn excitation leave it for a predefined time on before sampling (20ms) for stability
+
+
+for DIGITAL and COUNTER channels:
+
+    SAMPLER_DEFAULT           //sample accumulatively on rising edge
+    RISING_EDGE               //sensitive to rising edge
+    FALLING_EDGE              //sensitive to falling edge
+    EVENT                     //gives back the event on each change of state of signal 
+    EEPROM_TOTALIZER          //writes the values periodicaly into EEPROM(not implemented yet)
+    EXCITATION_33             //turn the excitation 3.3V (not implemented for digital yet) 
+    EXCITATION_50             //turn the excitation 5.0V (not implemented for digital yet)
+    RESET_ZERO_AFTER_READ    //do not count accumulatively but reset to zero when read
+
+for HUMIDITY and TEMPRATURE and BATTERY parameter has no significance.
+
+------------------------------------------------------------------------------------------------------------------
+
+interval is in 0.1 sec so 50 means 5 second.It can be maximum 65535 which is 1.82 hours.
+
+------------------------------------------------------------------------------------------------------------------
+the event data is back for the particular channels u called in the sampler.
+for ANALOG channels:
+     it is a value between 0-4096.for single ended channels(0-6) u convert it to voltage using Voltage= data * 2.5 /4096 
+     in volt and for differential channels(7-10) Voltage = 12.5 * (data / 2048 - 1) in milivolt 
+for internal BATTERY channel:
+     It is batterey volt*100
+for internal TEMPERATURE channel:
+    temprature in farenheight * 100
+for internal HUMIDITY channel:
+    humidity in 0-100%
+------------------------------------------------------------------------------------------------------------------
+
+The conversion formulas for some sensors are as follows:
+Note: val here is ADC value and conv is voltage).
+Note: Please send me the conversion of the new sensors u use.
+
+    case MPXA6115A:   // ADC is 1/2 chip Vout  Result is in mBar/10
+        // Sensor output: PmBar = (Vo/Vs)*1111.11+105.555
+        result = (int)(((float)val/4096)*11111.1 + 1055.55 + 0.5);          
+        break;
+
+    case HM1500_3V:     // Operate at Vdd 3.3V, direct connection of sense to ADC
+        // Use Humirel-supplied 3.3V calibration data and polynominal fit (result in %) 
+        //printf ("rawValue = %d\n", val);
+        res = (float)val;
+        result= (int) (( -3.9559e-6*res*res + 6.1797e-2*res-67.681) +0.5);        
+        break;
+
+    case HM1500_5V: // HM1500 at 5V  Use poloynomial fit, output V/2 (Result in %)
+        res = (float)val;
+        result = (int)((-3.4995e-9*res*res*res + 2.0015e-5*res*res + 
+                         1.1355e-2*res - 21.424)+0.5);
+        break;
+
+    case LM35:    //it has 10mv per degrees centigrade output
+        result= (int) (1000 * conv /10);   //degrees centegrade
+        break;
+
+    case LEAF_WETNESS_DAVIS:      // Output is resistance to ground >1Meg dry, <130K wet. 
+                                  //  Use 510K pullup to 2.5V 
+                                  //  So Dry is >1.66V, Wet is <0.51V
+        //  Convert this range to 0 (dry) to 10 (wet)
+        result = (int)((10*(conv-1.66)/(0.51-1.66))+0.5);
+        result = result > 10 ? 10 : result < 0 ? 0 : result;    
+        break;
+
+    case G1115:      // ADC value * 1.0105 is uA with 604 ohm and 100x gain 
+        result = (int)((float)val * 1.0105 +0.5);       
+        break;
+
+    case RAIN_DAVIS: 
+        result = val; // This is hundred times rainfall per inch.
+        break;
+
+    case ECHO20_2V:   // 2.5v excitation, result is volumetric % water content 
+        // from Manual: Theta = 0.000695*mVout - 0.29
+        // where Theta is the volumetric water content fraction (1=100%)
+        result = (int)(100*(0.000695 * (conv * 1000) - 0.29) + 0.5);    
+        break;
+
+    case ECHO10_2V:   // 2.5v excitation, result is volumetric % water content 
+        // from Manual: Theta = 0.000936*mVout - 0.376
+        // where Theta is the volumetric water content fraction (1=100%)
+        result = (int)(100*(0.000936 * (conv * 1000) - 0.376) + 0.5);   
+        break;
+
+    case ECHO20_5V:   // 5v excitation, result is volumetric % water content 
+        // from Calibration @5v: Theta = 0.0002883*mVout - 0.2872
+        // where Theta is the volumetric water content fraction (1=100%)
+        result = (int)(100*(0.0002883 * (conv * 1000) - 0.2872) + 0.5); 
+        break;
+
+    case ECHO10_5V:   // 5v excitation, result is volumetric % water content 
+        // Using the echo20 ratios: Theta = 0.000388*mVout - 0.373
+        // where Theta is the volumetric water content fraction (1=100%)
+        result = (int)(100*(0.000388 * (conv * 1000) - 0.373) + 0.5);   
+        break;
+
+    case BC_COMPONENT_THERMISTOR_NTC:      // This polynomial gives less than 0.1 degree error over -25 to 60 
+        res = (float)val;                  // report results in tenths of a degree
+        result = (int)(0.5 + 10 * (110.2149 - 1.138253e-1*res + 7.509040e-5*res*res -
+                       3.188276e-8*res*res*res  + 7.069376e-12*res*res*res*res - 
+                       6.502949e-16*res*res*res*res*res));
+        break;
+    case WIND_SPEED_DAVIS:  // KPH = freq*3.62  We count for 30 seconds (1/10 KPH)
+        result = (int)((float)val*3.62/3 + 0.5);
+        break;
+
+    case WIND_GUST_DAVIS:  // KPH = freq*2*1.810  We count for 2 seconds (KPH)
+        result = (int)((float)val*1.81 + 0.5);
+        break;
+
+    case WIND_DIRECTION_DAVIS:  // Linear voltage to angle. 0V = North. 4 degree dead zone      
+        result = (int)((float)val*356.0/4096+0.5);
+        break;
+
+    case WIND_GUST_CS_MET1_034B:  // KPH = freq*2*1.4395  We count for 2 seconds
+        result = (int)((float)val*1.4395 + 0.5);
+        break;
+
+    case WIND_SPEED_CS_MET1_034B:  // KPH = freq*2.879  We count for 30 seconds (1/10 KPH)
+        result = (int)((float)val*2.879/3 + 0.5);
+        break;
+
+    case WIND_DIRECTION_CS_MET1_034B:  // Linear V to Angle, 1/2 excitation.      
+        result = (int)((float)val*356.0/2048+0.5);
+        break;
+
+    case WEIGHT_FUTECH4OUNCE:
+        result = (int) (conv * 1000 + 0.5);
+        break;
+
+
+Tools:
+
+None
+
+Known bugs/limitations:
+
+None

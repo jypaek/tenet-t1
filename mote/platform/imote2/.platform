@@ -1,0 +1,16 @@
+@opts = ("-fnesc-target=env",
+         "-gcc=xscale-elf-gcc",
+	 "-nostartfiles",
+	 "-T$TOSDIR/platform/imote2/bare.x",
+	 "-fnesc-no-debug",
+	 "-DTINY_OS",
+	 "-I$TOSDIR/lib/CC2420Radio",	
+	 "-I$TOSDIR/platform/pxa27x/lib");	
+
+push @opts, "-mingw-gcc" if $cygwin;
+
+#$ENV{NESC_MACHINE} = "pointer=4,4 float=4,4 double=8,4 long_double=8,4 short=2,2 int=4,4 long=4,4 long_long=8,4 int1248_align=1,2,4,4 wchar_size_size=4,4 char_wchar_signed=false,true gcc=xscale-elf-gcc";
+$ENV{NESC_MACHINE} = "pointer=4,4 float=4,4 double=8,4 long_double=8,4 short=2,2 int=4,4 long=4,4 long_long=8,4 int1248_align=1,2,4,4 wchar_size_size=4,4 char_wchar_signed=false,true ";
+
+@commonplatforms = ("pxa27x");
+

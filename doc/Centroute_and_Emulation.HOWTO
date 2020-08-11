@@ -1,0 +1,144 @@
+cvs_id = "$Id: Centroute_and_Emulation.HOWTO,v 1.8 2008-06-23 22:22:12 karenyc Exp $"
+
+1. INTRODUCTION
+---------------
+
+This document describes how to compile Tenet to use the Centroute routing layer, and how to run Tenet applications under EmStar.  Any Centroute application requires the EmStar libraries to be compiled for the sink-side, but you can also compile leaf-side applications under EmStar, and thus simulate your application on your host PC.
+
+2. COMPILATION
+--------------
+
+2.1 General Steps
+-----------------
+
+
+To put the files for the emstar plaform in a place to be recognised by the tinyos compiler
+1) cd $TOSDIR/platform; ln -s $TENETDIR/mote/lib/centroute/platform/emstar/ emstar
+2) cd $TOSDIR/tools/make; ln -s $TENETDIR/mote/lib/centroute/platform/emstar/emstar.target
+
+Compiles the EmStar libraries
+3) cd $TENETDIR/master/emstar_lib; make; 
+
+Compiles the sink-side Centroute code
+4) cd $TENETDIR/master/centroute; make; 
+
+5) cd $TENETDIR/master/transport
+
+- Check the following lines are in the Makefile:
+
+USE_CENTROUTE=1
+# interfaces to other layers (app, routing, etc)
+ifdef USE_CENTROUTE
+TR_SRC += ../centroute/routinglayer.c 
+CFLAGS +=  -DOLD_TOS_MSG_FORMAT=1 
+CFLAGS += -I$(TENETDIR)/master/emstar_lib/ -I$(TENETDIR)/master/emstar_lib/misc_include/ -I$(TENETDIR)/mote/lib/centroute/lib/tos/system/
+else
+TR_SRC += routinglayer.c
+endif
+
+make
+
+(comment out the USE_CENTROUTE line when compiling with the Multihop routing layer)
+
+
+2.2 Compiling to run in Simulation (both leafs and sink under EmStar)
+----------------------------------------------------------------------
+
+1) cd $TENETDIR/mote/lib/centroute/apps/TreeSink
+
+- check in Makefile that the line starting with -DUSE_TENET is commented out (so it doesn't try to connect to serial forwarder, but uses the simulated channel)
+
+make emstar
+
+2) cd $TENETDIR/mote/apps/Tenet
+
+- check in the Makefile that the following line is not commented out (to compile without timesync):
+
+NO_TIMESYNC=1
+
+- check in the Makefile that the following lines are not commented out:
+
+# For centroute
+USE_ROUTE_ADAPTATION=1
+CFLAGS += -DUSE_CENTROUTE -DUSE_ROUTE_ADAPTATION=1
+# For emstar
+CFLAGS += -DOLD_TOS_MSG_FORMAT=1 
+LDFLAGS += $(TENETDIR)/../tools/sf/sfsource.o
+
+make emstar
+
+2.3 Compiling to run on telosb motes (sink under EmStar, leaf on hardware)
+--------------------------------------------------------------------------
+
+1) cd $TENETDIR/mote/lib/centroute/apps/TreeSink
+
+- uncomment the line in the Makefile that starts with -DUSE_TENET.  
+
+make emstar
+
+2) cd $TENETDIR/mote/apps/Tenet
+
+- check in the Makefile that the following lines are commented out as shown below:
+
+USE_ROUTE_ADAPTATION=1
+CFLAGS += -DUSE_CENTROUTE -DUSE_ROUTE_ADAPTATION=1
+# these lines needed to compile to run under EmStar
+#CFLAGS += -DOLD_TOS_MSG_FORMAT=1
+#LDFLAGS += $(TENETDIR)/tools/sf/sfsource.o
+
+make telosb
+
+3. RUNNING
+----------
+
+3.1 Running in Simulation (both leafs and sink under EmStar)
+------------------------------------------------------------
+
+Note: Execute all the programs from $(TENETDIR) directory and in the same order.
+
+cd $(TENETDIR)
+
+Start running the channel:
+./master/emstar_lib/obj.i686-linux/emstar_channel
+
+Start running the sink code:
+./mote/lib/centroute/apps/TreeSink/build/emstar/main.exe --nodeid 1
+./master/centroute/obj.i686-linux/centroute_tenet --out_data route_log_file --nodeid 1
+./master/centroute/obj.i686-linux/rawdata_tenet
+./master/transport/transport -a 1
+
+Start running the leaf code (note: can run an many nodes with unique id's as you like)
+./mote/apps/Tenet/build/emstar/main.exe --nodeid 10
+
+Start running whatever Tenet application you like, for example:
+./apps/pingtree/pingtree -v
+
+3.2 Running on telosb motes (sink under EmStar, leaf on hardware)
+-----------------------------------------------------------------
+
+cd $(TENETDIR)/mote/apps/BaseStation
+Make sure that the Makefile for BaseStation has following lines
+# For centroute
+CFLAGS +=  -DOLD_TOS_MSG_FORMAT=1
+Compile and install on a mote
+
+Compile and install Tenet application on the rest of the motes. Keep BaseStation mote connected to the PC.
+
+cd $(TENETDIR)
+
+Start running serial forwarder (skip if connecting to the tenet testbed)
+./tools/sf/sf 9000 /dev/ttyUSB0 57600 telosb
+
+
+Start running the sink code:
+./mote/lib/centroute/apps/TreeSink/build/emstar/main.exe --nodeid 1 --sf_host <host sf is running on> --sf_port <port sf is running on>
+./master/centroute/obj.i686-linux/centroute_tenet --out_data route_log_file --nodeid 1
+./master/centroute/obj.i686-linux/rawdata_sf --sf_host <host sf is running on> --sf_port <port sf is running on>
+./master/transport/transport -a 1
+Wait until transport says "Transport init done. Ready to send task."
+./apps/pingtree/pingtree -v
+
+4. RUNNING OTHER APPLICATIONS UNDER EMSTAR
+------------------------------------------
+
+EmStar functions are provided to emulate most mote functions.  The only change you should need to make to your code is replace calls to the Timer library with calls to EmTimerI instead (although the interface has the same format).

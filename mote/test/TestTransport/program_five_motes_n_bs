@@ -1,0 +1,11 @@
+#!/bin/sh
+
+mtelosb 1 USB0 Q=5 L=4 D=64 SR=5 BS=1000 GROUP=77 CH=26 POWER=6
+mrtelosb 2 USB1 Q=5 L=4 D=64 SR=5 BS=1000 GROUP=77 CH=26 POWER=6
+mrtelosb 3 USB2 Q=5 L=4 D=64 SR=5 BS=1000 GROUP=77 CH=26 POWER=6
+mrtelosb 4 USB3 Q=5 L=4 D=64 SR=5 BS=1000 GROUP=77 CH=26 POWER=6
+cd /home/jpaek/public_cvs/tenet/mote/apps/BaseStation
+pwd
+mtelosb 1000 USB4 Q=5 L=4 D=64 SR=5 BS=1000 GROUP=77 CH=26 POWER=6
+cd -
+

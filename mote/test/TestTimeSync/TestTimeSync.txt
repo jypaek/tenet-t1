@@ -1,0 +1,105 @@
+-------------------------------------------------------------------------------
+Author/Contact: 
+--------------- 
+ Brano Kusy: kusy@isis.vanderbilt.edu  
+ Miklos Maroti
+
+-------------------------------------------------------------------------------
+Conventions: 
+------------ 
+ TINYOS - the directory where you store the tinyos-1.x release 
+ ISIS - the directory of vu tinyos structure i.e. TINYOS/contrib/vu
+
+-------------------------------------------------------------------------------
+DESCRIPTION: 
+------------ 
+ TestTimeSync component verifies the precision of our timesync (ISIS/tos/lib/ 
+ TimeSync). TestTimeSyncPoller is a beacon (reference broadcaster). Each client 
+ (TestTimeSync app) responds to the beacon's radio msgs by sending data to base 
+ station (TOSBase). The base station forwards data to the PC in DiagMSG format 
+ or as a regular radio msg (TIMESYNC_DIAG_POLLER flag). More  information about 
+ the DiagMSGs and how to  display them can be found in TINYOS/tos/lib/DiagMsg. 
+
+ We propose the following test scenario: 
+ 
+ - one base station (TOSBase) connected to a PC. On the PC side you should: 
+    a) run an  application that can decode DiagMSGs, if DIAG_POLLER is defined, 
+    b) parse radio msg 0xb0 that contains struct data_t in the msg body, if 
+       DIAG_POLLER is not defined.
+ - one dedicated beacon (TestTimeSyncPollerC) broadcasts TimeSyncPoll msgs
+ - several clients (TestTimeSyncC) use 1) TimeSyncC component that provides 
+ timesync, and 2) TimeSyncDebuggerC component that handles sending data to a 
+ base station.  The format of this data is DiagMSG (see TINYOS/tos/lib/DiagMsg), 
+ or TOS_Msg (AM_HNDLR=0xb0).
+
+ For testing purposes, probably the he most important part of the reported data 
+ is the global time of arrival of the beacon's message. The beacon radio msg 
+ arrives to all clients at the same time instant, therefore the reported global 
+ times of different clients should be the same, if time sync works properly. 
+
+-------------------------------------------------------------------------------
+REPORTED DATA: 
+--------------
+ Each message that is sent back to the base station contains:
+
+ - the node ID of the mote that is sending this report (uint16_t) 
+ - the 	sequence number of the polling message that is increased by the poller 
+   for each new polling msg (uint16_t) 
+ - the global time when the polling message is arrived (uint32_t) 
+ - the local time of the mote when the 	polling message is arrived (uint32_t) 
+ - the skew (the speed ratio between the clocks of the root of the network  and 
+   the receiving node). Note, this value is normalized to 0, so 0 means  that 
+   the two clocks run with the same speed. (float) 
+ - the boolean value saying whether the node is synchronized or not. If a node 
+   is not synchronized, the global time is not to be considered valid (uint8_t)
+ - the id of the root of the time sync multi-hop algorithm. (uint16_t) 
+ - the sequence number of the last time synchronizataion msg received from the 
+   current root (uint8_t) 
+ - the number of entries currently stored in the linear regression table 
+   (uint8_t)
+
+-------------------------------------------------------------------------------
+TUNABLE PARAMETERS:
+-------------------
+(also see ISIS/tos/lib/TimeSync/TimeSync.txt)
+
+ TIMESYNC_RATE (seconds) - how often will each node transmit the time sync msg 
+ TIMESYNC_SYSTIME - if defined, the faster CPU (7MHz) clock is used, 
+ otherwise 32k external crystal is used 
+ TIMESYNC_DEBUG	- if defined, the multi-hop network is enforced by software 
+ TIMESYNC_POLLER_RATE - how often will the poller send the beacon message 
+ TIMESYNC_DIAG_POLLER - if defined, base station receives reported data in diag
+                        msg format; if not defined, data reported as TOS_Msg
+
+-------------------------------------------------------------------------------
+STEP BY STEP GUIDE TO RUN OUR TEST SCENARIO:
+--------------------------------------------
+1. upload 1 node with TINYOS/apps/TOSBase application(node id is not important) 
+2. upload 1 node with ISIS/apps/TestTimeSync/TestTimeSyncPollerC application 
+ 2a) set TIMESYNC_POLLER_RATE
+ 2b) modify Makefile to contain COMPONENT=TestTimeSyncPollerC; 
+ 2c) make mica2 install; node id is again not important 
+
+3. upload n (we used n=64) nodes with ISIS/apps/TestTimeSync/TestTimeSyncC app: 
+ 3a) set TIMESYNC_RATE, TIMESYNC_SYSTIME, TIMESYNC_DEBUG, or TIMESYNC_DIAG_POLLER
+ 3b) modify Makefile to contain COMPONENT=TestTimeSyncC 
+ 3c) make mica2 install.addr where addr is unique address, be careful if using 
+ TIMESYNC_DEBUG option, to keep your  network  connected(in our 64 mote scenario 
+ we programmed motes with these addrs: 0x5ij; i,j={0,1,...,7} and  using  0x444 
+ instead of 0x544; this forms 8x8 grid with the maximum hop distance of 4 - the 
+ root 0x444 is in the middle, see our SenSys paper for  similar  scenario)
+ 
+4. place all 64 nodes within the radio range  of TOSBase and TestTimeSyncPoller 
+and switch on the nodes, the base  station should start receiving time sync 
+messages from each of 64 nodes with TIMESYNC_RATE period after initial delay of 
+ROOT_TIMEOUT*TIMESYNC_RATE, time sync poller messages with POLLER_INTERRUPT_RATE 
+period and DiagMSGs(AM=0xb1)/TOS_Msg(AM=0xb0) which are responds to the poller msg.
+
+5. run some of the java applications to decode incoming DiagMSGs (TINYOS/tos/ 
+lib/DiagMsg), or mcenter/MessageCenter to parse 0xb0 TOS_Msg
+e.g.: java net.tinyos.tools.PrintDiagMsgs
+
+for evaluation info, see our technical report at
+ https://www.isis.vanderbilt.edu/projects/nest/documentation/Vanderbilt_NEST_TimeSynch.pdf
+or our SenSys'04 paper
+

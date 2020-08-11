@@ -1,0 +1,26 @@
+send_task sends a task command to the network.
+
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+
+This application is useful to play/test constructing task.
+
+Construction a task
+-------------------
+Instructions for constructing a task (which is, writing a task description)
+can be found at docs/Tasking_API.HOWT
+
+You can also try ./send_task -a
+
+RUN
+----
+./send_task "string_task"
+
+For example:
+./send_task "set_leds('7')"
+./send_task "repeat(500)->count(5,0,1)->set_leds(5)->send()"
+
+HELP
+----
+./send_task -h
+

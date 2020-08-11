@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#make telosb Q=31 D=60 IFRC=3 SACK=1
+#make telosb Q=31 D=60 IFRC=3 SACK=1 SR=30
+make telosb Q=31 D=64 L=4 POWER=6 CH=23
+scp build/telosb/* jpaek@testbed:~/t1bin/TestTransport/
+make clean
+
+cd /home/jpaek/public_svn/tenet/mote/apps/BaseStation
+pwd
+make telosb Q=31 DATA_LENGTH=64 L=4 POWER=6 CH=23
+scp build/telosb/* jpaek@testbed:~/t1bin/BaseStation/
+make clean
+cd -
+

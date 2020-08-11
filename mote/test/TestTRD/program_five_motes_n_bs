@@ -1,0 +1,12 @@
+#!/bin/sh
+
+mtelosb 1 USB0
+mrtelosb 2 USB1
+mrtelosb 3 USB2
+mrtelosb 4 USB4
+#mmicaz 5 USB0
+cd ../TOSBase
+pwd
+mmicaz 1000 USB3
+cd -
+

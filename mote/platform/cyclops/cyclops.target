@@ -1,0 +1,18 @@
+
+PLATFORM = cyclops
+SENSORBOARD ?= mda300
+PROGRAMMER_PART = -dpart=ATmega128 --wr_fuse_e=ff
+PFLAGS += -finline-limit=100000
+
+PROGRAMMER_FLAGS_INP=-dprog=dapa $(PROGRAMMER_EXTRA_FLAGS)
+ifdef AVRISP
+  PROGRAMMER_FLAGS_INP=-dprog=stk500 -dserial=$(AVRISP_DEV) -dpart=ATmega128
+endif
+
+AVR_FUSE_H ?= 0xd8
+
+$(call TOSMake_include_platform,avr)
+
+cyclops: $(BUILD_DEPS)
+	@:
+

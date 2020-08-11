@@ -1,0 +1,16 @@
+push( @includes, qw(
+
+  %T/lib/Flash
+  %T/lib/Flash/AT45DB
+
+) );
+
+
+@opts = ("-gcc=avr-gcc",
+	 "-mmcu=atmega128",
+	 "-fnesc-target=avr",
+	 "-fnesc-no-debug");
+
+push @opts, "-mingw-gcc" if $cygwin;
+
+@commonplatforms = ("mica2", "mica128", "mica", "avrmote");

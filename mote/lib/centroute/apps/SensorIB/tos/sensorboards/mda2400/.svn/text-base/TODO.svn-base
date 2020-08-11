@@ -1,0 +1,7 @@
+
+* Write UARTComm module
+  - Buffer requests
+  - Provide UARTComm interface to IBAD
+  - BUffer responses
+
+* Rewrite IBADM/C and SampleM/C

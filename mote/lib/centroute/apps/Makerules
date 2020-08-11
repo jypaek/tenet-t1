@@ -1,0 +1,53 @@
+#
+# Makefile to be included by each application's Makefile for S-MAC
+# Author: Mohan Mysore (Makejr was mimicked from Makesmac in contrib/s-mac)
+#
+# $Id: Makerules,v 1.2 2007-11-17 00:59:08 karenyc Exp $
+#
+# $Log: not supported by cvs2svn $
+# Revision 1.1  2007/09/10 21:45:22  karenyc
+# Initial commit of mote side code for Centroute, including some
+# sample applications.
+#
+# Revision 1.1  2004-07-19 22:02:24  ben
+# no more dsp
+#
+# Revision 1.2  2004/06/01 02:29:07  nithya
+# Added a directory for Nims incorporating Dsp module.
+#
+# Revision 1.1  2003/12/20 02:25:21  tschoell
+# Initial entry
+#
+# Revision 1.1  2003/10/22 00:23:05  eoster
+# Initial checkin.
+#
+# Revision 1.5  2003/05/08 21:18:45  mmysore
+# Old/new transceiver related changes... just making sure that the new
+# transceiver code doesn't step on the old code until we switch over to the
+# new one...
+#
+# Revision 1.4  2003/05/08 18:22:44  eoster
+# Changed include to use new Makecontrib file for including other contrib
+# dirs in a local build.
+#
+#
+
+#PLATFORM = emstar
+
+
+JR_TOSDIR = ../../tos
+
+INCLUDE = -I. -I$(JR_TOSDIR)/interfaces \
+          -I$(JR_TOSDIR)/system -I$(JR_TOSDIR)/lib \
+	  -I$(JR_TOSDIR)/sensorboards/$(SENSORBOARD) \
+	  -I$(JR_TOSDIR)/platform/$(PLATFORM)
+
+NIMS := ../../../tos
+
+CFLAGS += $(INCLUDE) \
+	-I$(NIMS)/platform/$(PLATFORM) \
+	-I$(NIMS)/interfaces \
+	-I$(NIMS)/system
+
+include ../Makecontrib
+

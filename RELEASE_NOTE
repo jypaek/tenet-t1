@@ -1,0 +1,41 @@
+
+Changes in Tenet 2.0 - 6/20/2008
+========================================
+Tenet 2.0 introduces several new platforms/protocols/features over
+Tenet 1.x and has been used in seismic and habitat monitoring
+deployments for up to a month. It includes:
+- Support for Cyclops camera as a sensor
+- Support for Mica2/Mica2dot platforms
+
+Features that have been tested in a lab environment but not tested in
+deployments yet:
+- Centroute is a centralized routing protocol in which the master,
+based on the neighborhood information sent by the motes, computes the
+routing tree for the mote network.
+- Emstar emulation for Tenet so that the developers can test Tenet
+code without mote hardware.
+- tenet-t2 compiles for TinyOS 2.1 and uses the CTP routing protocol
+and supports mote radio dutycycling using the LPL stack in TinyOS 2.1
+
+Changes in Tenet 1.02 - 4/1/2007
+========================================
+- Python library path bug in netviz is fixed.
+- Change of default sampling tasklet: 
+  - substitute SlowSample tasklet with SimpleSample tasklet.
+  - corresponding changes to tasking API
+    ex> sample(1000,1,22,5) ==> sample(22,5)
+- Limit number of concurrent connections in sendstr tasklet to 1.
+- Modification in TRD packet format for easier packet snooping.
+- A bug in Mote routing table is fixed
+- Tenet Router ignores communication among other routers if it is 
+  running with loopback address
+- Age Neighbors Table for tasklet get(NEIGHBOTS)
+
+Changes in Tenet 1.01 - 2/12/2007
+========================================
+- Sensor reading on Telosb is supported.
+
+
+Tenet 1.0 is released - 1/26/2007
+========================================
+

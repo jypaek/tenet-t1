@@ -1,0 +1,217 @@
+
+INTRODUCTION
+------------
+
+This document describes how to use Cyclops camera in Tenet. Cyclops is 
+a digital camera which captures and processes low-resolution monochrome 
+and color images (http://www.cyclopscamera.org/). In Tenet, Cyclops can
+be attached to Tenet motes (Mica2 or Micaz) to provide 'Image' tasklet.
+By using several API's provided by this Image tasklet, Tenet can capture,
+process, and deliver images and image features.
+
+Here are some of the features provided by the Tenet Image tasklet:
+- take monochrome and color images, at max resolution of 240x240.
+- background subtraction based object detection algorithm reports
+  whether the new image is significantly different from the previous.
+- use 'run length encoding' based algorithms to compress image.
+  (decompression is done at the application on the master)
+
+This document assumes that you have already tried running the default 
+Tenet without Cyclops camera. (Refer to 'Single_Master_Install.HOWTO')
+
+This document also assumes that you are generally familiar with compiling 
+and installing TinyOS software on the motes. 'Recompile_Mote_Binary.HOWTO'
+describes more information on compiling Tenet mote binaries.
+
+
+
+1. Hardware Requirement
+-----------------------
+
+  - Two platforms, Micaz and Mica2, are supported as Tenet mote that the 
+    Cyclops camera can be attached to.
+  - Cyclops camera version 'Cyclops2C' is supported in Tenet.
+
+
+
+2. Mote Binary Instructions
+---------------------------
+
+  The Tenet mote binary provided in the Tenet binary distribution DOES 
+  NOT include the 'Image' tasklet required for Cyclops. You must re-compile
+  the mote binary to include the 'Image' tasklet before installing it.
+
+  There are two ways to get re-compiled mote binary with 'Image' tasklet.
+  Assuming that you are generally familiar with compiling and installing
+  TinyOS software on the motes and that you have already read the document
+  'Recompile_Mote_Binary.HOWTO', we explain both methods briefly here.
+  You can choose to use either method.
+
+  a) Re-compile from the Tenet source code
+
+    - Including the 'Image' tasklet into the Tenet mote binary involves 
+      adding a compile-time option "CYCLOPS_HOST=1" while re-compiling 
+      'tenet/mote/apps/Tenet'. In general, if you are using micaz platform 
+      as your Tenet mote, you should use the command;
+
+        $ make micaz install.<id> mib510,<dev> CYCLOPS_HOST=1
+
+      instead of the original command
+        
+        $ make micaz install.<id> mib510,<dev>
+
+    - Detailed instructions on how to download Tenet source code and
+      re-compile the mote binary is in 'Recompile_Mote_Binary.HOWTO'.
+
+  b) Download the binary from "http://testbed.usc.edu/tenetbin/"
+
+    1) Goto "http://testbed.usc.edu/tenetbin/"
+    2) Click on 'tenet/mote/apps/Tenet'
+    3) Select your platform; it must be either mica2 or micaz.
+    4) Select the set of tasklets to include in the binary by using the 
+       check boxes; check 'Image' tasklet. You should un-check the 
+       'Sample' tasklet since it cannot co-exist with 'Image' tasklet.
+    5) Press 'Compile' button, review your choices, and then press 'Run'.
+       Compiling may take up to several tens of seconds.
+    6) Download the re-compiled mote binary.
+
+
+
+3. Cyclops Binary Instructions
+------------------------------
+
+  In addition to the Tenet mote, you also need to compile the cyclops binary 
+  and install it on to the cyclops itself. The cyclops binary has the actual
+  implementation of all the functionalities provided by Tenet Image tasklet.
+
+  a) Re-compile from the Tenet source code
+
+    - Go to 'tenet/mote/test/CyclopsDevice' directory, and compile by using 
+      the command;
+
+        $ make cyclops
+
+      If this doesn't work, you might want to copy the file
+      'tenet/mote/platform/cyclops/cyclops.target' to '$TOSDIR/../tools/make/'.
+      (e.g. /opt/tinyos-1.x/tools/make/cyclops.target)
+
+      Install the binary to the cyclops by,
+
+        $ make cyclops install mib510,<dev>
+
+  b) Download the binary from "http://testbed.usc.edu/tenetbin/"
+
+    - Download from the link 'tenet/mote/test/CyclopsDevice'.
+    - Install the binary to Cyclops as if you are installing it to a mote.
+
+
+
+4. Application Instructions
+---------------------------
+
+  Currently, there are two Tenet applications in 'tenet/apps/imaging/' 
+  directory that uses Cyclops to take and process images. 'simple_image'
+  is the simplest example of an application that takes and delivers an image.
+  'imaging' is an application that can invoke all the functionalities
+  provided by the Image tasklet.
+
+  Here we assume that you already have tenet master stack running and you
+  can run other applications such as 'pingtree'.
+
+  a) 'simple_image' application
+
+    - This application uses default configurations and settings to take a
+      128x128 resolution black & white image and deliver it back to the
+      application using best-effort transport. One 'bmp' image per node will
+      be generated. 
+      
+    - Run the application using the command;
+
+        $ ./simple_image
+
+      You can modify the packet rate by using '-r' option.
+
+  b) 'imaging' application
+
+    - This application allows the user to invoke all the functionalities
+      provided by the Image tasklet, modify configurations and options,
+      repeat the actions, and delivery data with different transport 
+      mechanisms. 
+
+    - Running the application using the command;
+
+        $ ./imaging
+
+      will have same behavior as the 'simple_image' application.
+
+    - You can provide command line arguments to perform other tasks. 
+      For example,
+
+        $ ./imaging  REPORTRATE 50  SIZE 64 64  IMAGETYPE COLOR
+      
+      will send 64x64 color image, at 20pkts/sec. (REPORTRATE of 50 means that
+      an image fragment packet is generate every 50 millisecond).
+
+        $ ./imaging  REPORTRATE 50  REPEAT 5 60  SIZE 128 128  IMAGETYPE BW
+
+      will send 128x128 BW image, every 60sec for 5 times, at 20pkts/sec.
+
+        $ ./imaging  MODULE GET_RLE REPORTRATE 100 THRESH 10
+
+      will send default image, using run-length encoding w/threshold=10, 
+      at 10pkts/sec.
+
+        $ ./imaging  MODULE GET_PACKBITS RELIABLE 3 REPORTRATE 20 THRESH 20
+
+      will send default image, using PackBits encoding (threshold=20), 
+      at 50pkts/sec with reliable stream transport. 
+      (PackBits algorithm requires reliable delivery)
+
+    - Please use the following commands for more information on the full list 
+      of available options and their syntax.
+
+        $ ./imaging -h
+        $ ./imaging -a
+
+
+
+5. Image Compression Algorithm
+------------------------------
+
+  Currently in Tenet, two different kinds of Run-Length Encoding algorithms
+  are implemented for image compression.
+
+  - Simple RLE   : everything is encoded in to [len][byte].
+                   Invoked using "image_getRle" API.
+
+  - PackBits RLE : Apple/Macintosh format (http://en.wikipedia.org/wiki/PackBits).
+                   Invoked using "image_getPackBits" API.
+
+  The actual implementation of the encoding algorithm is done in the cyclops.
+  The decoding must be done at the application running on the master. 
+  (e.g. 'tenet/apps/imaging/imaging')
+
+  Both implementations provide lossy compression with thresholds; pixel values
+  within threshold range can compose a 'run' in run-length encoding.
+  Lossless RLE is lossy RLE with threshold == 0. You can adjust this threshold 
+  to meet the data reduction requirement that you want.
+
+  Here are some of my experiment results:
+  - http://enl.usc.edu/~jpaek/data/cyclops/rle/lossy_rle2.html
+  - http://enl.usc.edu/~jpaek/data/cyclops/rle/lossy_rle1.html
+
+
+
+6. Image Tasklet Taskling APIs
+------------------------------
+
+  The up-to-date list of tasking API's provided by the Image tasklet
+  can be viewed by using the 'tenet/apps/send_task' application.
+  Go to 'tenet/apps/send_task' directory and run the command;
+
+    $ ./send_task -u image
+
+  This will list all the tasking API's whose name begins with 'image'.
+  (e.g. image_get, image_detect, image_getRle, image_getPackBits, etc).
+
+

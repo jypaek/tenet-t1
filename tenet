@@ -1,0 +1,474 @@
+#!/bin/bash
+##
+# "Copyright (c) 2006 University of Southern California.
+# All rights reserved.
+#
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the following two paragraphs and the author appear in all
+# copies of this software.
+#
+# IN NO EVENT SHALL THE UNIVERSITY OF SOUTHERN CALIFORNIA BE LIABLE TO
+# ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+# DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS
+# DOCUMENTATION, EVEN IF THE UNIVERSITY OF SOUTHERN CALIFORNIA HAS BEEN
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THE UNIVERSITY OF SOUTHERN CALIFORNIA SPECIFICALLY DISCLAIMS ANY
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+# PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+# SOUTHERN CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
+# SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+#
+##
+
+##
+# Tenet startup script
+# This script performs
+#   - with 'start' option,
+#     - run a serial forwarder
+#     - run Tenet Router
+#     - run Tenet Transport
+#   - with 'stop'
+#     - kill the three processes
+#
+# Authors: Ki-Young Jang
+# Embedded Networks Laboratory, University of Southern California
+# Modified: 7/28/2007
+##
+
+# Sanity checks.
+
+SetupHelp()
+{
+    echo
+    echo "# Environment varialbes TENET_ROOT and TENET_HOST_OS must be set."
+    echo "# Check them:"
+    echo "    $ echo \$TENET_ROOT"
+    echo "    $ echo \$TENET_HOST_OS"
+    echo "# Run the following:"
+    echo "    $ ./setup"
+    echo "    $ source ~/.bash_profile   _or_   $ source ~/.profile"
+    echo "# Please refer to 'docs/Single_Master_Install.HOWTO' for detailed instructions"
+    echo
+    exit 1
+}
+
+# For Tenet source
+[ -e $TENET_ROOT/.dist ] || 
+{	EXPECTED_TENET_ROOT=`dirname $0`; \
+	OLD_PWD=`pwd`; \
+	cd $EXPECTED_TENET_ROOT; \
+	TENET_ROOT=`pwd`; \
+	cd $OLD_PWD; \
+	TENET_HOST_OS="/"
+}
+
+if [ "$TENET_ROOT" == "" ]
+then
+    echo
+    echo "TENET_ROOT not found"
+    SetupHelp
+    exit 1
+fi
+
+if [ "$TENET_HOST_OS" == "" ]
+then
+    echo
+    echo "TENET_HOST_OS not found"
+    SetupHelp
+    exit 1
+fi
+
+AWK="awk"
+
+if [ "$TENET_HOST_OS" == "stargate" ]
+then
+    AWK="gawk"
+fi
+
+
+SF="$TENET_ROOT/tools/sf/sf"
+ROUTER="$TENET_ROOT/master/router/router"
+TRANSPORT="$TENET_ROOT/master/transport/transport"
+
+SF_PID="$TENET_ROOT/tools/sf/sf.pid"
+ROUTER_PID="$TENET_ROOT/master/router/router.pid"
+TRANSPORT_PID="$TENET_ROOT/master/transport/transport.pid"
+
+
+NoBinary() {
+    echo
+    echo "\"$1\" does not exist. Did you compile TENET master binaries?"
+    echo
+    exit 0
+}
+
+[ -x $SF ] || NoBinary $SF
+[ -x $ROUTER ] || NoBinary $ROUTER
+[ -x $TRANSPORT ] || NoBinary $TRANSPORT
+
+
+MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+SETCOLOR_SUCCESS="echo -en \\033[1;32m"
+SETCOLOR_FAILURE="echo -en \\033[1;31m"
+SETCOLOR_WARNING="echo -en \\033[1;33m"
+SETCOLOR_NORMAL="echo -en \\033[0;39m"
+
+echo_success() {
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_SUCCESS
+  echo -n $"  OK  "
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  echo -ne "\r"
+  return 0
+}
+
+echo_failure() {
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_FAILURE
+  echo -n $"FAILED"
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  echo -ne "\r"
+  return 1
+}
+
+echo_done() {
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_SUCCESS
+  echo -n $" DONE "
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  echo -ne "\r"
+  return 0
+}
+
+GetPID()
+{
+    PID=0
+    ps ax | grep $1 | while read line
+    do
+    PROG=$( echo ${line} | $AWK '{print $5}' | grep $1 )
+        PID=$( echo ${line} | $AWK '{print $1}' )
+    
+    if [ "$PROG" != "" ]
+    then
+            echo $PID
+        fi
+    return
+    done
+}
+
+IsAlive()
+{
+    ps ax | grep $1 | while read line
+    do
+        PID=$( echo ${line} | $AWK '{print $1}' )
+
+        if [ "$1" == "$PID" ]
+        then
+            echo $PID
+        fi
+        return
+    done
+}
+
+IsRunning()
+{
+    if [ -e $1 ]
+    then
+        PID=$(cat $1)
+        RESULT=`IsAlive $PID`
+            
+        if [ "$RESULT" == "$PID" ]
+        then
+            echo "TENET is already running."
+            exit 1
+        fi
+    fi
+}
+
+Stop()
+{
+    echo
+    echo "Stopping TENET... "
+
+    if [ -e $TRANSPORT_PID ]
+    then
+        echo  -n "            Stopping Tenet Transport  "
+        kill -15 $(cat $TRANSPORT_PID) >> /tmp/tenet.log 2>&1
+        rm -rf $TRANSPORT_PID
+        sleep 1
+        echo_success
+        echo
+    fi
+
+    if [ -e $ROUTER_PID ]
+    then
+        echo  -n "            Stopping Tenet Router     "
+        kill -9 $(cat $ROUTER_PID) >> /tmp/tenet.log 2>&1 
+        rm -rf $ROUTER_PID
+        sleep 1
+        echo_success
+        echo
+    fi
+
+    if [ -e $SF_PID ]
+    then
+        echo  -n "            Stopping Serial Forwarder "
+        kill -9 $(cat $SF_PID) >> /tmp/tenet.log 2>&1
+        rm -f $SF_PID
+        sleep 1
+        echo_success
+        echo
+    fi
+
+    echo -n "    "
+    echo_done
+    echo
+    echo
+
+    exit 1
+}
+
+ShowLog()
+{
+    echo "------------------------------------------------------------"
+    cat /tmp/tenet.log
+    echo "------------------------------------------------------------"
+}
+
+CheckStatus()
+{
+    if [ -e $1 ]
+    then
+        echo_success
+        echo
+    else
+        echo_failure
+        echo
+
+        ShowLog
+
+        Stop
+    fi
+}
+
+Start() 
+{
+    if [ $# -lt 1 ]
+    then
+        Help
+    exit 1
+    fi
+
+    IsRunning $TRANSPORT_PID
+    IsRunning $ROUTER_PID
+    IsRunning $SF_PID
+
+    if [ $? == 1 ]
+    then
+        echo "TENET is already running"
+        exit 1
+    fi
+
+    echo
+    echo "Starting TENET ... "
+
+    SET_ADDRESS=0;
+    RUN_SF=0;
+    SET_SF_PORT=0;
+    SET_SF_RATE=0;
+    SET_TR_PORT=0;
+    SET_TR_INF=0;
+    SF_PORT=9002;
+    SF_RATE=57600;
+    ROUTER_PORT=9999;
+
+    HOST_ADDRESS="127.0.0.1";
+
+    while getopts a:c:s:r:n:t:i:bzh opt
+    do
+        case "$opt" in
+    
+            a) ADDRESS="$OPTARG";
+               SET_ADDRESS=1;
+               echo "    TENET_ADDRESS  : $ADDRESS"
+               ;;
+    
+            c) DEVICE="$OPTARG";
+               RUN_SF=1;
+               echo "    DEVICE         : $DEVICE"
+               ;;
+    
+            s) SF_PORT="$OPTARG";
+               SET_SF_PORT=1;
+               echo "    SF_PORT        : $SF_PORT"
+               ;;
+
+            r) SF_RATE="$OPTARG";
+               SET_SF_RATE=1;
+               echo "    SF_RATE        : $SF_RATE"
+               ;;
+    
+            n) HOST_ADDRESS="$OPTARG";
+               echo "    HOST_ADDRESS   : $HOST_ADDRESS"
+               ;;
+    
+            t) TRANSPORT_PORT="$OPTARG";
+               SET_TR_PORT=1;
+               echo "    TRANSPORT_PORT : $TRANSPORT_PORT"
+               ;;
+
+            i) NETWORK_INF="$OPTARG";
+               SET_TR_INF=1;
+               echo "    NETWORK_INF    : $NETWORK_INF"
+               ;;
+
+            h) Help;;
+
+            \?) Help;;
+        esac
+    done
+
+	[ $SET_ADDRESS -eq 1 -a $SET_TR_INF -eq 1 ] &&
+	{ \
+	    echo "You cannot use '-a' option and '-i' option at the same time." ; \
+		exit 1
+	}
+
+    echo
+  
+    shift $(($OPTIND - 1))
+
+    if [ -e /tmp/tenet.log ]
+    then
+        cp /tmp/tenet.log /tmp/tenet.log.bak
+    fi
+    date > /tmp/tenet.log
+
+    # Serial Forwarder --------------------------------------------------
+    if [ $RUN_SF -eq 1 ]
+    then
+        echo  -n "            Starting Serial Forwarder "
+
+        #if [ "$MOTE_TYPE" == "mica2" ] # doesn't matter
+        $SF $SF_PORT $DEVICE $SF_RATE mica2 >> /tmp/tenet.log 2>&1 & 
+
+        sleep 3
+
+        RESULT=`IsAlive $!`
+
+        if [ "$RESULT" == "$!" ]
+        then
+            echo $! > $SF_PID
+            chmod 666 $SF_PID
+        fi
+
+        CheckStatus $SF_PID
+    fi
+      
+    # TENET ROUTER --------------------------------------------------
+    echo  -n "            Starting Tenet Router     "
+
+    if [ $RUN_SF -eq 1 -o $SET_SF_PORT -eq 1 ]
+    then
+        if [ $SET_ADDRESS -eq 1 ]
+        then
+            $ROUTER -a $ADDRESS -sp $SF_PORT -sh $HOST_ADDRESS -n lo >> /tmp/tenet.log 2>&1
+        else
+            if [ $SET_TR_INF -eq 1 ]
+            then
+                $ROUTER -sp $SF_PORT -sh $HOST_ADDRESS -n $NETWORK_INF >> /tmp/tenet.log 2>&1
+            else
+                $ROUTER -sp $SF_PORT -sh $HOST_ADDRESS >> /tmp/tenet.log 2>&1
+            fi
+        fi
+    else
+        if [ $SET_ADDRESS -eq 1 ]
+        then
+            $ROUTER -a $ADDRESS -s -n lo >> /tmp/tenet.log 2>&1
+        else
+            if [ $SET_TR_INF -eq 1 ]
+            then
+                $ROUTER -s -n $NETWORK_INF >> /tmp/tenet.log 2>&1
+            else
+                $ROUTER -s >> /tmp/tenet.log 2>&1
+            fi
+        fi
+    fi
+  
+    sleep 1
+
+    CheckStatus $ROUTER_PID
+
+    # TENET TRANSPORT --------------------------------------------------
+    echo  -n "            Starting Tenet Transport  "
+
+    if [ $SET_ADDRESS -eq 1 ]
+    then
+        $TRANSPORT -a $ADDRESS -f /tmp/.tenettid >> /tmp/tenet.log 2>&1
+    else
+        if [ $SET_TR_INF -eq 1 ]
+        then
+            $TRANSPORT -n $NETWORK_INF -f /tmp/.tenettid >> /tmp/tenet.log 2>&1
+        else
+            $TRANSPORT -f /tmp/.tenettid >> /tmp/tenet.log 2>&1
+        fi
+    fi
+
+    CheckStatus $TRANSPORT_PID
+
+    echo -n "    "
+    echo_done
+    echo
+    echo
+}
+
+Help()
+{
+    echo
+    echo "Usage: ./tenet [start/stop] [options]"
+    echo "options> "
+    echo "  -a <id>  : set the local address"
+    echo "  -i <if>  : set the network interface"
+    echo "  -c <dev> : set serial/usb port device (will run sf accordingly)"
+    echo "  -s <port>: set sf port (will not run sf, but connect to existing one)"
+    echo "  -r <rate>: set sf baudrate (default is 57600. For mica2dot, it should be 19200)"
+    echo "  -t <port>: set transport port"
+    echo "  -n <host>: set host"
+    echo " "
+    echo "# Common usage: ./tenet start -a <id> -c <device>"
+    echo "  where <id> is the id of the BaseStation,"
+    echo "  and <device> is the serial connection to the BaseStation (eg. /dev/ttyUSB0)"
+    echo " "
+    echo "# If no option specified, then will run router, and transport with default setting."
+    echo "  Assumes that sf is running with server port 9000"
+    echo "  Will use 16bit LSB of IP as address, and open 9998 as transport server port"
+    echo
+    exit 1
+}
+
+case "$1" in
+    start)
+        shift $((1))
+        Start $*
+        ;;
+
+    stop)
+        Stop
+        ;;
+
+    *)
+        Help
+        ;;
+esac
+exit $RETVAL
+

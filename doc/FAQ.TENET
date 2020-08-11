@@ -1,0 +1,377 @@
+
+                        TENET FAQ
+                        =========
+
+
+1. Requirements
+
+  1.1 Q: What mote platforms are supported?
+      A: As stated everywhere, we support telosb (both moteiv and crossbow)
+         and micaz (crossbow). But there behavior might be slightly different.
+         Source distribution also experimentally support mica2 and mica2dot.
+         See section 2.*.
+
+  1.2 Q: What PC/OS platforms are supported?
+      A: We've tested our binary distribution on Windows/Cygwin and
+         Fedora Core 3,4,5. In general, tenet should work where tinyos-1.x
+         works with the latest tools.
+
+  1.3 Q: I get error while running netviz.py / python?
+      A: We've compiled our library using python 2.4. If you are using 2.5
+         or later, it should work, but you might want to recompile the python 
+         library. If you are using 2.3 or earlier, things might not work.
+         Also, our netviz application requires a python visulization tool
+         called 'tkinter'. You must install this yourself.
+
+  1.4 Q: I got the Tenet source code from the CVS and I want to compile them.
+      A: Tenet mote code is written and compiled using tinyos-1.x. So, you
+         need to install tinyos-1.x and all the latest tools required in
+         tinyos-1.x, such as nesC 1.2.7, make 3.8, avr-gcc, msp430-gcc, etc.
+         To compile the Tenet source code for motes, we require tinyos-1.1.11 
+         or later, and proper configuration to support telosb and micaz.
+         Also, the following tools are tested to work ok: 
+         - nescc (1.2.7, 1.2.8 tested, ncc 1.2alpha5, 1.2.4) 
+         - avr-gcc (3.4.3 tested) 
+         - msp-gcc (3.2.3 tested) 
+         - gcc (3.4.4, 4,1,2 tested)          
+         We recommend installing the latest tools from tinyos-2.x installation
+         page; tools (compilers, lib, etc) for tinyos-2.x are backward 
+         compatible with tinyos-1.x, and they have better instructions.
+         After installing the tools, download a copy of tinyos-1.x from CVS.
+         Please refer to tinyos.net for more information.
+
+  1.5 Q: I have EPRB instead of MIB510 for programming MicaZ. Can I use Tenet?
+      A: Yes, See 5.3 for Tenet binary distribution.
+         Of course, old-fashioned tinyos way works if you have downloaded Tenet
+         source code from CVS and compiling/installing yourself.
+
+
+2. Mote Platforms
+
+  2.1 Q: What are the differences between telosb and micaz in Tenet?
+      A: There are several differences:
+         - Memory: micaz has smaller RAM size (4kB where as 10kB in telosb)
+                   If we exclude the RAM used by the tenet system, the
+                   remaining heap size difference is even larger (1kB vs 5kB)
+                   So, the task concurrency is much smaller for micaz.
+         - Sensor: See 2.2
+         - Tasklet capabilities: See 2.3
+         - Timesync: See 2.4
+         - Packet Size: See 2.5
+         
+  2.2 Q: I know that micaz does not have on-board sensors while telosb does.
+         Are there differences while using 'sample' tasklet for two platforms?
+      A: Yes, there are differences.
+         We assume 'micasb'(mica sensorboard, crossbow) for 'sample' in micaz,
+         which has photo, temperature, accelx, and accely. 
+         Telosb has on-board sensors for photo(tsr,psr), temperature, 
+         internal temperature, and humidity. Check 'tenet_task.h'.
+      
+  2.3 Q: Do the tasklets behave differently for telosb and micaz?
+      A: Only for few of them.
+         'sample'     : See 2.2
+         'get'        : MEMORY_STATS does not work for micaz
+         'userbutton' : only on telosb
+         'send'       : The maximum amount of data that it can send in a
+                        single packet differs. See 2.5.
+
+  2.4 Q: Will timesync work on a mixed network of telosb and micaz?
+      A: No... not really. The system does try, and the clock do synchronize
+         when all the motes are in 1-hop range, but they are not so robust.
+         The main reason is that telosb uses clock frequency of 32768Hz
+         and micaz uses 28800Hz. So the 'skew' in timesync is big. Even if
+         the motes synchorize their clock at one point, it will diverge
+         quickly.
+
+  2.5 Q: What packet payload size (TOS_DATA_LENGTH) does tenet use?
+      A: We use TOS_DATA_LENGTH of 76 bytes for micaz and 114 for telosb.
+         When we exclude the header sizes, the effective payload size is
+         below 62 and 100 bytes for micaz and telosb respectively.
+         This difference may cause some problems when using a mixed 
+         network of both telosb and micaz; micaz cannot receive packets
+         sent by telosb mote that are larger than what micaz can handle.
+
+  2.6 Q: Can I use a mixed (hybrid) network of both telosb and micaz?
+      A: You can, but not recommended because of the reasons in 2.4 and 2.5
+         Officially, we don't support that, although we do try stuff.
+
+
+3. Mote Error Messages
+
+  3.1 Q: When I run a tenet application, I get error messages like
+         "[Node @] #[ERROR] ERR_**** @ ELEMENT_%%%% (ELEMENT_INDEX ##)".
+         What is this?
+      A: These are error messages generated within the mote and sent to the
+         application that issued the task.
+         "Node @" represent the node id from which the message was sent.
+         "ERR_****" represent the error type.
+         "ELEMENT_%%%%" represent the tasklet which caused the error.
+         (it could also be more general or specific in some special cases)
+         "ELEMENT_INDEX ##" represent the index of the tasklet in your task
+         description chain that caused the error. (starting from 0)
+         The reason for these error can be many things such as memory shortage,
+         invalid operation, not supported functionality, etc.
+         It is also possible that the error is usage error by the user
+         such as overloading the mote above it's capability/capacity.
+         These error may terminate the task if critical, or continue with
+         the task otherwise. See below for more information on each error type.
+
+  3.2 Q: I got an error "ERR_RESOURCE_BUSY @ ELEMENT_ISSUE". What is this?
+      A: You must have used "wait" or "issue" tasklet with 'repeat', right?
+         This error means that our in-direct loop; "repeat in ISSUE";
+         is forking itself faster than the forked active_task exits the system.
+         In other words, you are trying to repeat faster than it can handle.
+         Probably, you are trying to send packets more than it can send.
+         Currently, Tenet allow at most 5 forked active_tasks (from same task)
+         to be in the system at the same time. (upto 5 queued-up repeats)
+         So, if this error happens often, you must slower your repeat rate.
+         
+  3.3 Q: I got an error "ERR_NO_ROUTE". How can you send a error message when
+         there is no route? Routing paradox?
+      A: :-)
+         Yes, this error means that there is no route from the mote to the 
+         master. And it is true that error messages are sent via the usual
+         tenet routing mechanism that other response packets use, with one
+         exception. When there is no route, tasks are not installed, but
+         the error messages are still sent using 1-hop broadcast address
+         so that you can at least hear these error messages from 1-hop nodes.
+         This gives you an idea why task responses are not comming in properly
+         and you can quickly cancel the task and retask later.
+
+
+4. Master Error Messages
+
+  4.1 Q: Tenet stack on the master crashed with an error "unix error" and
+         everything stopped working. What is this and what should I do?
+      A: This error must have happend at the serial forwarder, and it is an 
+         error that we don't know the exact reason yet. It seems that the error
+         usually happens when you are using a USB hub for your base-station, 
+         or when the traffic rate is high on the base-station (especially 
+         from PC to the mote). For now, the only solution is to reboot your 
+         base-station and restart your tenet-stack on the master.
+
+
+5. Installing/Programming Motes
+
+  5.1 Q: Is there any restriction in what node-id I can use for the motes?
+      A: You cannot use below for any motes: tenet node, nor base station.
+         - 0, 255      : due to their special meaning as the lower 16-bit 
+                         of IP addresses.
+                         Also, '0' means 'empty' in some code parts.
+         - 65535, 126  : reserved for local BCAST(0xffff) and UART(0x007e) 
+                         addresses in tinyos.
+         Also, there should be no duplicate node id's in the whole network.
+
+  5.2 Q: Any restriction on what node id to use for the base station mote?
+      A: You can use any id that conforms with (5.1). But just keep in mind 
+         that the address of the base station should match the address that
+         you specify when running the master tenet stack (in "-a" option) 
+         on top of this base station mote. And for multi-master case, the
+         address used to run the tenet stack on the master ("-a" option when
+         running "./tenet start") should match the lower 16-bit of the IP 
+         address of that master and the address of the base station mote on 
+         that master.
+
+  5.3 Q: Can I install MicaZ mote using EPRB programming board that connects 
+         to the mote over TCP/IP?
+      A: Yes, although you need to modify our scripts a little.
+         Our scripts (install_BaseStation and install_Tenet) for installing
+         mote binaries assume MIB510 programming board for MicaZ. So, if you
+         are using eprb, you need changed the programming line in the 
+         instal_BaseStation and install_Tenet scripts from:
+
+          $ TOOLS_DIR/$TENET_HOST_OS/uisp -dprog=mib510 -dserial=${MOTE_DEV} 
+            -dpart=ATmega128 --wr_fuse_e=ff --erase --upload if=${IMG_PATH_EXT}
+
+         to:
+
+          $ TOOLS_DIR/$TENET_HOST_OS/uisp -dprog=stk500 -dhost=${MOTE_DEV} 
+            -dpart=ATmega128 --wr_fuse_e=ff --wr_fuse_h=d9 --erase --upload
+            if=${IMG_PATH_EXT}
+
+         You must also set the command line DEVICE option to the IP address 
+         of the device that you are programming. (e.g. 192.168.10.6)
+
+
+6. Initialization / Bootup delay
+
+  6.1 Q: It seems that I cannot task the motes immediately after boot up.
+         How long does it take for the motes to initialize? How long do I
+         have to wait after I turn on the motes?
+      A: The motes usually take 8~10 seconds to initialize itself after boot
+         up. But this time does not include the routing tree establishment.
+         It may take around 30 seconds for the mote to find a parent, and this
+         time could be longer in multihop topology.
+
+  6.2 Q: I ran tenet stack on the master (using ./tenet start) and it said
+         "[ DONE ]". Can I task the motes immediately?
+      A: Yes, as long as motes were turned on before that. Otherwise, please
+         wait for 8~10 seconds after mote bootup. See 6.1.
+         
+  
+7. Tasklet Usage
+
+  7.1 Q: How can I see the usage syntax of each tasklet?
+      A: Run our example application 'send_task' with '-u' option.
+           $ ./send_task -u <tasklet api>
+         For example,
+           $ ./send_task -u "wait"
+         You can see the whole list of all API's using '-a' option.
+           $ ./send_task -a
+          
+  7.2 Q: Send() tasklet has three options; 0,1,2. Which one should I use?
+      A: Tenet has three different types of transport mechanisms that the
+         application can choose to use.
+         - Send(0) : Best effort delivery, without end-to-end reliability.
+                     This is for loss tolerant applications such as periodic
+                     sensing. It has least overhead and delay.
+         - Send(1) : Reliable packet delivery with end-to-end acknowledgement
+                     and retransmissions. This is for low-rate delay-tolerant
+                     applications that require high reliability. Since it waits
+                     for end-to-end acknowledgement, there could be some delay
+                     (hence low throughput) depending on the network size.
+         - Send(2) : Reliable stream transport with end-to-end connection
+                     establishment and NACK based retransmissions. Guarantees
+                     in-order duplicate-free delivery with 100% reliablity.
+                     This is for applications that require delivery of stream
+                     of packets at high rate with 100% reliability.
+                     See 7.3 and 7.4 for more information.
+         We recommend using send(0) for most 'periodic' applications. Depending
+         on the network size and the communication environment, send(1) has a 
+         limit on how fast it can send. You can try our sample application
+         'system' and measure how long it takes to get information from all 
+         motes. That time is the limit on how fast our 'send(1)' can send.
+         See 7.4 for more information on send(2).
+
+  7.3 Q: Send(2) doesn't work at all. Why? Can I use stream reliable transport?
+      A: Tasklet for stream reliable transport is not included in the
+         default tenet binary. To include this, you must download the tenet
+         source and re-compile the mote binary. Go to tenet/mote/apps/Tenet/,
+         open 'tasklets.h', uncomment #INCLUDE_SENDSTR, and re-compile the
+         mote binary using the command 'make telosb'.
+
+  7.4 Q: If the reliable stream transport (send(2)) is so good as you claim,
+         then why not use it for all applications?
+      A: Well, there is nothing free in this world. There are two limitations
+         that prevents you from doing this. One is related to the behavior of
+         the protocol, and second is due to the limitations of the mote and
+         artifact of our implementation.
+         1) The protocol guarantees 100% reliability upto a certain limit of
+            transmission rate and packet losses, which depends on the network 
+            topology and the communication environment. If you go above this
+            limit, the protocol has to give up and terminate. Also, for low
+            rate applications, since the protocol uses NACK, it must see the 
+            next packet to figure out the loss of the previous packet, and this
+            may cause delay in retransmissions.
+         2) The protocol uses flash/EEPROM on the motes as a circular buffer 
+            to store all the transmitted packets for possible retransmissions.
+            Due to the limit in how much flash it can occupy, the number of 
+            concurrent stream-transport-connections is limited to 2 for now.
+            
+      
+8. Serial Forwarder
+
+  8.1 Q: Can I use my own serial forwarder instead of the default one in the
+         master tenet stack (./tenet)?
+         Can I use tinyos default java 'SerialForwarder' to connect to motes?
+         If so, how do I run the tenet stack (./tenet start) on the master?
+      A: Yes, you can run your own 'SerialForwarder', assuming you know and 
+         understand how to run it.
+         See 8.2 for how to run Java SerialForwarder.
+         See 8.3 for how to run tenet stack on top of your own serial forwarder
+         without the tenet default serial forwarder.
+         
+  8.2 Q: How do I run and use Java 'SerialForwarder' for tenet base station?
+      A: Assuming that you are using the tinyos default Java SerialForwarder 
+         (tinyos-1.x/tools/java/net/tinyos/sf/SerialForwarder), you must run
+         it with 'telos' as the platform option. Otherwise, you will get error
+         messages saying 'invalid packet length'.
+         NOTE: The platform options must always be 'telos' regardless of whether
+               you are using MicaZ or TelosB.         
+           $ java net.tinyos.sf.SerialForwarder -comm serial@<dev>:telos \
+             -port 9000             
+         where <dev> must be in the form of COM#. (e.g COM1, COM4). See 8.4.         
+         For the network programming board (e.g. eprb board):         
+           $ java net.tinyos.sf.SerialForwarder -comm network@<ip>:<port>:telos
+             -port 9000             
+         where <ip> and <port> is the IP address and port number for your eprb
+         network programming board.
+         
+  8.3 Q: How do I run the tenet stack (./tenet start) on the master without
+         'SerialForwarder'? (I have my own 'SerialForwarder' running)
+      A: Instead of doing,
+           $ ./tenet start -a <address> -c <device>  // don't do this           
+         you should run the tenet stack on the master with the following:         
+           $ ./tenet start -a <address> -n <hostname> -s <sf_port>           
+         where <hostname> and <sf_port> is the host name and port number where
+         your own serial forwarder is running.
+         
+  8.4 Q: Java 'SerialForwarder' takes COM# (e.g. COM1) as an argument for
+         the serial device. But I am on a linux machine and I don't have COM#.
+         What should I do?
+      A: If you are on a linux machine, you might need to do the following:      
+         If your serial device is '/dev/ttyS#', then use 'COM(#+1)'. 
+         For example, for /dev/ttyS3, use COM4. And use COM1 for /dev/ttyS0.         
+         If your serial device is '/dev/ttyUSB#', then it is more complicated.
+         Tou need to link your serial device to match these COM# numbering.
+         Let's assume that your serial device is /dev/ttyUSB2.
+         First, backup one of your serial device file, if exist. For example,         
+           $ mv /dev/ttyS8 /dev/ttyS8.bak           
+         Then, make a soft link to your serial device:         
+           $ ln -s /dev/ttyUSB2 /dev/ttyS8
+         And then use COM9 as your <dev> for your java serial forwarder.
+         NOTE: You need root permission to do this. It is convenient to change 
+               permission of all possibly used serial devices to 666.
+
+            
+      
+9. Trouble Shooting
+
+  9.1 Q: Where is trouble shooting information?
+      A: It has moved to tenet/docs/Trouble_Shoot.HOWTO
+
+
+
+10. IP routing for Multi-Master Tenet
+
+ 10.1 Q: Does Tenet automatically setup IP routing between Masters?
+         Doesn't Tenet automatically setup IP routing between Masters for me?
+         How do I configure IP routing between Masters?
+      A: No, Tenet does not automatically setup IP routing between Masters.
+         You should do this your self, and we assume you know how to do this.
+         Tenet does overlay routing on top of the IP routing set by you.
+
+ 10.2 Q: How can I setup IP routing between Masters?
+         What kind of IP routing can I use?
+      A: The easiest way is to setup static routing. But you can try 'RoofNet'
+         or 'OLSR' or you can even try using an access point in managed mode.
+         What Tenet assumes is that it can send an UDP/IP packet from one
+         master to another using a socket. For example, say there are 
+         (at least) two masters 101 and 102 with subnet 10.0.0.*. Tenet will
+         work as long as 10.0.0.101 can send both unicast and broadcast IP
+         packets to 10.0.0.102, and vice versa, regardless of how these two
+         nodes are connected (AP-mode, Ad-hoc, overlay, static, etc).
+
+ 10.3 Q: IP broadcast is not working! How can I check IP broadcast?
+      A: When running Tenet in Multi-Master setup, you must check that you
+         have IP connectivity between the masters. For example, if you have
+         two masters 101 and 102 with subnet 10.0.0.* and broadcast 10.0.0.255, 
+         then try:
+          - 101> ping 10.0.0.102
+          - 101> ping -b 10.0.0.255
+          - 102> ping 10.0.0.101
+          - 102> ping -b 10.0.0.255
+         Make sure that every thing works.
+         If this does not work, then first, stop your firewall,
+          - linux> sudo iptables stop
+                // stop the firewall
+         and check the following two files:
+          - linux> cat /proc/sys/net/ipv4/ip_forward    
+                // this should show '1'
+          - linux> cat /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+                // this should show '0'
+         To set them, configure '/etc/sysctl.conf' file:
+          - linux> sudo vi /etc/sysctl.conf
+          - // uncomment 'net.ipv4.icmp_echo_ignore_broadcast=0
+          - // uncomment 'net.ipv4.conf.default.forwarding=1
+

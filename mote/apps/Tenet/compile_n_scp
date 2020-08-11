@@ -1,0 +1,15 @@
+#!/bin/sh
+
+make telosb POWER=31 CH=23
+echo "scp build/telosb/* jpaek@testbed:~/t1bin/Tenet/"
+scp build/telosb/* jpaek@testbed:~/t1bin/Tenet/
+make clean
+
+cd /home/jpaek/public_svn/tenet/mote/apps/BaseStation
+pwd
+make telosb POWER=31 CH=23 Q=30
+echo "scp build/telosb/* jpaek@testbed:~/t1bin/BaseStation/"
+scp build/telosb/* jpaek@testbed:~/t1bin/BaseStation/
+make clean
+cd -
+

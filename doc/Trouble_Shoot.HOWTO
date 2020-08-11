@@ -1,0 +1,147 @@
+
+                        Trouble Shooting
+                        ================
+
+
+This document 
+ - tries to rescue you from "Tenet is not working!!!" frustration.
+ - tries to give you some hints on how you might debug the system.
+ - tries to explain how the motes *should* behave in normal operation, and
+ - tries to identify problems when the motes do not bahave as they should.
+ - assumes that you've went through Single_Master_Install.HOWTO and
+   FAQ.TENET documents, and that you know the basics of running Tenet.
+ - assumes that you are running Tenet in well debugged settings:
+   (Linux master, Telosb motes, binaries in our CVS, etc)
+
+
+
+1. Check motes with LEDs.
+
+  1.1 Q: Tenet is not working for me. When I run an application, nothing happens.
+         Can I tell what is going on by the LEDs on the motes?
+      A: Yes, please refer to 1.2 and 1.3.
+
+  1.2 Q: What does the LEDs on the BaseStation mean?
+      A: Toggling of YELLOW LED on the BaseStation means that a packet has been 
+         sent from the BaseStation to the master through UART (serial port).
+         Toggling of GREEN LED on the BaseStation means that a packet has been 
+         sent from the BaseStation to the motes through the air (radio).
+         Toggling of RED LED on the BaseStation means that a packet has been 
+         dropped in the BaseStation due to either transmission failure or 
+         queue overflow, on either UART or the radio side.
+         
+  1.3 Q: When I turn on the Tenet mote or reset it, RED LED is on after bootup.
+         What does this mean?
+      A: RED LED on the Tenet motes within few seconds after programming 
+         (or turning on, or resetting), is a bad sign.
+         If you didn't run any application, no led should be on on the Tenet 
+         motes after bootup. And the RED LED within few seconds after bootup 
+         usually means "some problem with the FLASH... specifically, problem 
+         while mounting or erasing the flash used for TRD or StreamTransport."
+      
+  1.4 Q: Is there a way to tell whether a Tenet mote is bad or not?
+         What should happen when I reset a Tenet mote?
+      A: Try resetting (turning off and on again) the Tenet mote. Then the LEDs
+         on the BaseStation (green and the yellow) should flicker few times.
+         (Ofcourse, this assumes that there is a BaseStation mote, and the 
+          Tenet master stack is running on the master.)
+         This means that the Tenet mote and the master are exchaning some 
+         initialization packets.
+         But a better way will be to actually snoop the packets in the air. 
+
+
+
+2. Snoop the packets in the air to identify problems.
+
+  2.1 Q: How can I snoop the packets in the air?
+      A: (Assuming you know basics of TinyOS), program a separate mote with 
+         TOSBase. And then, run 'sf' (serial fowarder), and then run 'sflisten'.
+         You can also use a Java equivalent (SerialForwarder, Listen).
+         TOSBase is not in the Tenet distribution, but is in the tinyos-1.x 
+         distibution. You must increase the TOS_DATA_LENGTH size of TOSBase
+         (to 110 for telosb and 64 for micaz) to see the Tenet packets.
+         'sf' and 'sflisten' are included in the tenet CVS for convenience.
+         Instead of 'sflisten', you can also use 'tenet_snoop'. See 2.2.
+
+  2.2 Q: I want to snoop the packets in the air and make some sense out of it.
+         Do you have anything better than 'sflisten'?
+      A: In the Tenet CVS, go to tenet/tools/snoop/ directory.
+         And use 'tenet_snoop' binary on top of 'sf' instead of 'sflisten'.
+         This will give you some more information than 'sflisten'.
+
+  2.3 Q: When I snoop the packets in the air, what should I see?
+      A: Snooping the air can give you a lot of hints on what might be 
+         going wrong in the system. 
+
+         When you restart a Tenet mote, there should be at least some number 
+         of packets (for initialization & synchronization) in the air.
+         There must be TOSMsg's with type:
+          - 0x73 : few after bootup,    // TRD control
+          - 0x01 : one every 30sec      // MultihopLQI beacons
+          - 0xaa : one every 30sec      // FTSP timesync beacons
+          - 0x75 : maybe few            // TRD tasking msg
+
+         When you send a task, you should immediately see some
+          - 0x75 : TRD tasking messages
+
+         When data is coming back from the motes, they will have TOSMsg type 
+          - 0x77 : Tenet routing packets, which is used to transport data.
+
+         When you are trying to snoop the packets in the air, but see nothing,
+         then reset couple of Tenet motes to initiate initialization.
+
+         If you still see nothing, either
+          - radio CHANNEL is wrong between any combination of Tenet, 
+            BaseStation and/or TOSBase motes
+          - TOS_Msg format is wrong on the TOSBase
+          - you didn't programmed the motes properly
+          - motes are dead
+
+         If you see routing beacons but not TRD beacons
+          - Flash might be wrong (try re-formatting the mote flash)
+
+         If you see TRD beacons but not FTSP beacons
+          - you disabled timesync?
+
+         If you see TRD beacons but not MultihopLQI beacons
+          - what did you do?
+
+  2.4 Q: I can see packets using 'sflisten' but not using 'tenet_snoop'.
+      A: TOS_Msg format is wrong. There is a history behind this.
+         mica/mica2/mica2dot uses 5-byte TOS_Msg format.
+         telosa/telosb uses 10-byte TOS_Msg format that works on CC2420.
+         micaz was a platform that came out in the middle of transition.
+         micaz uses 10-byte TOS_Msg format for radio (since it uses CC2420)
+         but the developers didn't want to change the software on the master
+         and wanted to use the code that worked for mica2. So, when 
+         packets were sent over the UART, they translated the 10-byte
+         TOS_Msg into the old 5-byte TOS_Msg format using 'FramerM.nc' file.
+         Do I need to explain more? :-)
+         We translate all CC2420-style 10-byte TOS_Msg packet format to
+         old fashioned 5-byte TOS_Msg packet format, even for telosbs,
+         so that we can have one type of TOS_Msg on the masters for all
+         mica2/mica2dot/micaz/telosb platforms.
+
+
+
+3. Infer problem from tasking behavior
+
+  3.1 Q: When I run a tenet application, I get mote error messages like
+         "[Node @] #[ERROR] ERR_**** @ ELEMENT_%%%% (ELEMENT_INDEX ##)".
+      A: See tenet/docs/FAQ.TENET
+
+  3.2 Q: When I run tenet, only one task works and and never a second.
+         What is wrong?
+      A: Flash on the mote is wrong. Try re-formatting the telosb mote.
+         If you are not using telosb, report to tenet developers.
+
+
+
+4. Identify problem at the BaseStation
+
+  4.1 Q: By snooping the packets in the air, I think I am seeing packets 
+         correctly, but my application is not receiving data
+      A: Check /tmp/tenet.log and see whether 'BaseStation' has
+         responded with correct node id.
+
+

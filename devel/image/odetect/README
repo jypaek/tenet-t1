@@ -1,0 +1,6 @@
+
+USE 'run_objectdetection_on_bmp' to test
+background-subtraction-based object detection alg.
+
+./run_objectdetection_on_bmp myimg1.bmp myimg2.bmp
+

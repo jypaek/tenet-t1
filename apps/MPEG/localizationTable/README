@@ -1,0 +1,5 @@
+The *.table file contains the voting scheme information to do the the localization
+Each row represents a node.
+Each collumn represents a position.
+If the table has a value different of -1, it means the node will vote for that position.
+This file is generated automatically by generateTable application.

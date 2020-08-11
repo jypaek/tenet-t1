@@ -1,0 +1,129 @@
+
+
+   Writing Tenet Applications
+   ==========================
+
+
+
+1. INTRODUCTION
+---------------
+
+This document briefly describes how to write a Tenet application.
+In Tenet, all applications run on the masters, and task motes 
+using a simple, yet expressive, linear data-flow tasking language.
+As an application developer, you don't have to write code for the
+motes in order to develop your applications. In fact, you don't even
+have to compile code for the motes -- our distribution includes a
+pre-compiled Tenet binary image for TelosB and MicaZ.
+Rather, you can rely on more familar programming language such as 
+C or python for writing applications. 
+
+This document assumes that you are familiar with writing simple 
+C-programs, and only explains how to write applications in C.
+
+
+
+2. TENET LIBRARY
+----------------
+
+The Tenet binary distribution provides support for compiling your own 
+application. This includes pre-compiled tenet library files 
+(e.g. "lib/libtenet.a"), and a header file "tenet.h" which has 
+the API that your application can use.
+
+They are located at "tenet/master/lib directory", and can be included
+by including "tenet/master/apps/Makerules" from your Makefile.
+
+
+
+3. EXAMPLE APPLICATION
+----------------------
+
+There is an example application source in the Tenet binary distribution
+that you can use as a tutorial and as a template for writing an application.
+It is at:
+
+    % cd $TENET_ROOT/master/apps/example_app
+
+The two files in this directory: 'Makefile' and 'example_app.c' has
+most of the informations that you need to write an application. For
+example, you can:
+
+    % make example_app
+
+and it should compile that application for you. Also, example_app.c is
+well-documented, so you should be able to understand how to write a
+new application.
+
+
+a. 'Makefile' includes the "tenet/master/apps/Makerules" file.
+   Also, your compilation should include the appropriate library file
+   depending on your settings:
+   - To cross compile with C for stargates, $(TENET_LIB_ARM)
+   - To cross compile with C++ for stargates, $(TENET_LIB_ARM_CPP)
+   - C++ compilation for your machine, $(TENET_LIB_CPP)
+   - Otherwise, $(TENET_LIB)
+   should be included in the compilation of your application binary.
+
+
+b. Your application should include 'tenet.h' file to use the tenet tasking 
+   and transport API. You can find this file at: $TENET_ROOT/master/lib
+   'tenet.h' file describes the API that you can use to disseminate task,
+   receive the responses, parse the responses, and delete the task.
+   That's all you need.
+
+
+c. Then the basic structure of your application becomes:
+
+   #include "tenet.h"
+
+   int main() {
+
+      send_task("my_task_description_string");
+
+      while(1) {
+
+         response = read_response(timeout);
+
+         // parse the response;
+      }
+   }
+
+
+d. To parse the response, you can:
+
+    d.1 print the response using function response_print(response) as defined in tenet.h
+
+    d.2 Iterate through the response, which has a list of attributes.
+
+    struct response *list;
+    struct attr_node* value_node = NULL;
+
+     for (value_node = list->head ; value_node ; value_node = value_node->next) {
+     mote_data = value_node->value[0];
+}
+
+    d.3 Locate the attribute 'type' in the response using function find()
+
+    struct attr_node* data_attr = NULL;
+    data_attr = response_find(response, 101);/* locate attribute 'type 101'*/
+    nexthop = data_attr->value[0];
+
+
+e. Error conditions
+
+  File 'tenet.h' define error conditions that may happen when tasking the network.
+  When asking to read a response, you may get a NULL response. This could be because:
+    e.1 there is no more response and the system timed out (TIMEOUT);
+    e.2 incorrectly tried to task a mote (MOTE_ERROR);
+    e.3 Tenet network stack failed to task/receive a response;
+
+
+
+4. CONSTRUCTING A TASK DESCRIPTION
+----------------------------------
+
+Instructions for constructing a task (which is, writing a task description)
+can be found at docs/Tasking_API.HOWTO
+
+

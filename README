@@ -1,0 +1,52 @@
+WELCOME
+-------
+
+Tenet is software for flexibly programming a tiered network of
+sensors. Tiered networks consist of *motes* (currently Tenet supports
+MicaZ and TelosB motes) and PC-class devices that we call *masters*
+(our distribution includes binaries for Cygwin, Linux Fedore Core 3,
+and Stargates). In Tenet, all applications run on the masters, and
+task motes using a simple, yet expressive, linear data-flow tasking
+language. 
+
+This is an alpha release, since much of Tenet is under active
+development. It is designed to give you a feel for some of Tenet's
+main features:
+
+- As an application developer, you don't have to write code for the
+motes in order to develop your applications. In fact, you don't even
+have to compile code for the motes -- our distribution includes a
+pre-compiled Tenet binary image for MicaZ and TelosB.
+
+- We provide several pre-compiled applications (more on this in the
+installation instructions), but we also have included the ability for
+you to compile your own Tenet application.
+
+- You can run multiple applications concurrently, as described in the
+installation instructions.
+
+If you have any questions about this release, please feel free to
+email tenet-users@enl.usc.edu. You may join this list to participate
+in discussions about tenet.
+
+
+INSTALLATION
+------------
+
+To install Tenet on mote network with a single base station:
+    see doc/Single_Master_Install.HOWTO
+
+To install Tenet on a tiered network with multiple Stargates or PCs:
+    see doc/Multi_Master_Install.HOWTO
+
+To learn about Tenet tasking:
+    see doc/Tasking_API.HOWTO
+
+To develop Tenet applications:
+    see doc/Applications.HOWTO
+
+If you would like to add mote-support to Tenet (e.g. new drivers or
+tasklets), we'd encourage you to check out our CVS repository:
+
+    http://enl.usc.edu/cgi-bin/viewcvs/viewcvs.cgi/tenet
+

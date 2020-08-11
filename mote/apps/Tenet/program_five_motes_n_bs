@@ -1,0 +1,13 @@
+#!/bin/sh
+
+mtelosb 2 USB1 CH=23
+mrtelosb 3 USB2 CH=23
+#mrtelosb 4 USB3 CH=23
+#mrtelosb 5 USB0 CH=23
+#mmicaz 5 USB0
+cd ../BaseStation
+pwd
+mtelosb 1 USB4 CH=23
+#mmicaz 1000 S0
+cd -
+

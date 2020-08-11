@@ -1,0 +1,22 @@
+# Author: Mohammad Rahimi mimicked from Makesmac in contrib/s-mac 
+#
+# $Id: Makerules,v 1.1 2007-09-10 21:45:22 karenyc Exp $
+#
+# $Log: not supported by cvs2svn $
+# Revision 1.1  2003-08-15 02:46:34  mhr
+# *** empty log message ***
+#
+# Not ready for release still some known bugs
+
+SENSOR_IB_TOSDIR = ../../tos
+
+INCLUDE = -I. -I$(SENSOR_IB_TOSDIR)/interfaces \
+          -I$(SENSOR_IB_TOSDIR)/system -I$(SENSOR_IB_TOSDIR)/lib \
+	  -I$(SENSOR_IB_TOSDIR)/sensorboards/$(SENSORBOARD) \
+	  -I$(SENSOR_IB_TOSDIR)/platform/$(PLATFORM)
+
+CFLAGS += $(INCLUDE)
+
+PROGRAMMER_EXTRA_FLAGS = -v=2
+
+include $(TOSDIR)/../apps/Makerules

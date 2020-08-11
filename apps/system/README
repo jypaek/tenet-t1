@@ -1,0 +1,31 @@
+System application displays the properties of each node.
+
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+
+RUN
+----
+./system
+
+HELP
+----
+./system -h
+
+NOTE
+----
+You will get some error messages regarding MemoryStats when running on MicaZ:
+
+ [Node #] #[ERROR] ERR_NOT_SUPPORTED @ ELEMENT_MEMORYSTATS  (ELEMENT_INDEX 9)
+ 
+But no need to worry. It is a correct behavior for MicaZ.
+
+Output Example
+--------------
+Number of nodes 2
+
+================================================================================
+ ID   NUM  ACTIVE LEDS RADIO RADIO  TIME  NEXT  USED  MAX  TIME
+      TASKS TASKS      POWER  CH    SYNCR  HOP  RAM   RAM
+================================================================================
+  2     1     1     0     5    21     1     1   376   400 84506733
+  5     1     1     0     5    21     1     1   376   400 84506733

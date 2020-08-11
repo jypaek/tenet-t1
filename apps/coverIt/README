@@ -1,0 +1,29 @@
+CoverIt application only works for Telos nodes.
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+
+This application illustrates how easy is to implement a collaborative task in Tenet.
+If at least one node is covered, all nodes should have blue LED on.
+If no nodes are covered, all nodes should have red LED on.
+It continously read light sensor from Telos nodes.
+
+Try blocking a node, two nodes and no nodes.
+
+
+RUN
+----
+./coverIt
+
+HELP
+----
+./coverIt -h
+
+Output Example
+--------------
+
+Press Cntrl-C to STOP!
+Node 14 is blocked. Changing to Blocking state.
+No nodes are blocked. Changing to Non-Blocking state.
+Node 14 is blocked. Changing to Blocking state.
+No nodes are blocked. Changing to Non-Blocking state.
+

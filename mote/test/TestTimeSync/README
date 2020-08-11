@@ -1,0 +1,36 @@
+
+################################################################################
+# Test FTSP TimeSync
+################################################################################
+
+1. HOWTO
+
+  - compile two or more motes here (TestTimeSync)
+     ex>  make telosb install.2 bsl,/dev/ttyUSB1
+
+  - compile one mote in this directory with 'POLLER=1' flag
+     ex>  make telosb install.100 bsl,/dev/ttyUSB2 POLLER=1
+
+  - compile one mote with TOSBase
+     ex>  make telosb install.1000 bsl,/dev/ttyUSB0
+
+  NOTE: Make sure that 'TOSH_DATA_LENGTH' is sufficiently large (>40)
+        in all cases b/c debugging message size exceeds default 28 bytes.
+
+
+2. How it works
+
+  - poller sends out reference broadcast
+  - all other motes, upon reception of this poll msg, send out poll reply
+  - use TOSBase to listen to these replies and check ftsp performance
+
+
+3. To see the reply packets
+  - go to 'ftsplisten' directory and run the program
+
+
+@last modified: Oct. 31. 2007
+-- 
+--  Jeongyeup Paek (jpaek@enl.usc.edu)
+--
+

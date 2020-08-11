@@ -1,0 +1,141 @@
+#!/bin/sh 
+##
+# "Copyright (c) 2006 University of Southern California.
+# All rights reserved.
+#
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the following two paragraphs and the author appear in all
+# copies of this software.
+#
+# IN NO EVENT SHALL THE UNIVERSITY OF SOUTHERN CALIFORNIA BE LIABLE TO
+# ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+# DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS
+# DOCUMENTATION, EVEN IF THE UNIVERSITY OF SOUTHERN CALIFORNIA HAS BEEN
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THE UNIVERSITY OF SOUTHERN CALIFORNIA SPECIFICALLY DISCLAIMS ANY
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+# PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+# SOUTHERN CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
+# SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+#
+##
+
+##
+# Mote binary programming script
+#
+# Authors: Ki-Young Jang
+# Embedded Networks Laboratory, University of Southern California
+# Modified: 2/6/2007
+##
+
+TOOLS_DIR="$TENET_ROOT/tools/programming"
+IMG_PATH="."
+IMG_NAME="main.ihex"
+IMG_PATH_EXT=""
+
+JOB="Program"
+MOTE_TYPE="telosb"
+MOTE_ID=""
+MOTE_ADDR=""
+
+OLD_PWD=`pwd`
+
+ShowUsage()
+{
+	echo "Usage :"
+	echo "before running it,"
+	echo "  For telosb, 'main.exe' and 'main.ihex' are needed. "
+        echo "  For micaz, 'main.exe' and 'main.srec' are needed. "
+	echo "----------------------------------------------------------------------"
+	echo " install_mote <MOTE_TYPE> <IMG_PATH> <DEVICE> <TOS_ADDR>"
+	echo "----------------------------------------------------------------------"
+    echo "  <MOTE_TYPE>: telosb (default), micaz, mica2 or mica2dot"
+	echo "  <IMG_PATH> : set the program image path"
+	echo "  <DEVICE>   : set the device"
+	echo "Report bugs to kjang@usc.edu"
+	exit 1
+}
+
+if [ "$1" = "" ]
+then
+  ShowUsage 
+fi
+
+if [ "$TENET_ROOT" = "" ]
+then
+    echo "TENET_ROOT not found"
+    exit 1
+fi
+
+if [ "$TENET_HOST_OS" = "" ]
+then
+    echo "TENET_HOST_OS not found"
+    exit 1
+fi
+
+if [ $# -ne 4 ]
+then
+
+    echo "$*"
+	ShowUsage
+fi
+
+MOTE_TYPE=$1
+IMG_PATH=$2
+MOTE_DEV=$3
+MOTE_ADDR=$4
+	
+case $JOB in
+
+    "Program")
+
+        cd ${IMG_PATH}
+        echo "----------------------------------------------------------------------"
+
+        case $MOTE_TYPE in
+
+            "telosb")
+
+                IMG_NAME="main.ihex"
+
+                if [ -e ${IMG_PATH}/${IMG_NAME} ]
+    	        then
+	    	        echo "${IMG_PATH}/${IMG_NAME} is ready"
+                else
+        	    	echo "<Error> ${IMG_PATH}/${IMG_NAME} is not found"
+		            ShowUsage
+        	    fi
+
+                $TOOLS_DIR/set-mote-id --objcopy $TOOLS_DIR/$TENET_HOST_OS/msp430-objcopy --objdump $TOOLS_DIR/$TENET_HOST_OS/msp430-objdump --target ihex ${IMG_NAME} ${IMG_NAME}-${MOTE_ADDR} ${MOTE_ADDR}
+	            IMG_PATH_EXT=${IMG_NAME}-${MOTE_ADDR}
+                $TOOLS_DIR/$TENET_HOST_OS/msp430-bsl --telosb -c ${MOTE_DEV} -r -e -I -p ${IMG_PATH_EXT} 
+                                ;;        
+ 
+            "micaz"|"mica2"|"mica2dot")
+
+                IMG_NAME="main.srec"
+
+                if [ -e ${IMG_PATH}/${IMG_NAME} ]
+	        	then
+		            echo "${IMG_PATH}/${IMG_NAME} is ready"
+            	else
+       		        echo "<Error> ${IMG_PATH}/${IMG_NAME} is not found"
+	        		ShowUsage
+        	    fi
+        
+                $TOOLS_DIR/set-mote-id --objcopy $TOOLS_DIR/$TENET_HOST_OS/avr-objcopy --objdump $TOOLS_DIR/$TENET_HOST_OS/avr-objdump --target srec ${IMG_NAME} ${IMG_NAME}-${MOTE_ADDR} ${MOTE_ADDR}
+            	IMG_PATH_EXT=${IMG_NAME}-${MOTE_ADDR}
+                $TOOLS_DIR/$TENET_HOST_OS/uisp -dprog=mib510 -dserial=${MOTE_DEV} -dpart=ATmega128 --wr_fuse_e=ff --erase --upload if=${IMG_PATH_EXT} 
+                ;;
+        esac    
+        
+        rm -rf ${IMG_PATH_EXT}
+		cd $OLD_PWD            
+    ;;
+esac
+
+exit 0

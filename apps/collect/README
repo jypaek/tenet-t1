@@ -1,0 +1,33 @@
+Collect application works for Telos and MicaZ nodes.
+It continously read and display sensor information .
+It may take a few moments before displaying data.
+
+TELOSB SENSORS:
+--------
+-Sensirion Relative Humidity Sensor
+-Sensirion Temperature Sensor
+-Hamamatsu Photosynthetically Active Radiation Light Sensor
+-Hamamatsu Total Solar Radiation Light Sensor
+-TI MSP430 Internal Temperature Sensor
+-TI MSP430 Internal Voltage Sensor
+
+MICAZ SENSORS: sensorboard 310
+-------------
+-Internal Voltage Sensor
+-Photo Sensor
+-Acceleration Sensor X
+-Acceleartion Sensor Y
+
+RUN
+----
+./collect
+
+HELP
+----
+./collect -h
+
+Output Example
+--------------
+
+Node=2 temperature=26.46 humidity=42.88 light=1684.57
+Node=2 temperature=26.50 humidity=42.95 light=1124.27

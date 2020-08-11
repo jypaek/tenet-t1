@@ -1,0 +1,27 @@
+
+
+[1] HOW TO RUN
+
+  - install this program to the telosb mote
+  - you will see 'blue' led on.
+  - wait for about 20~30 seconds.
+  - if you see 'green' led on, then you are done.
+
+
+[2] NOTE
+
+  FLASH (EEPROM) on telosb must be formatted before use.
+  And the format must be done in a way that corresponds to it's use.
+
+  Currently, TenetNoTask uses TransportComm as the transport layer.
+  TransportComm uses StreamTransportC and TRD_TransportC
+  which requires access to Flash.
+
+  So, this "FormatTelosbFlash" program formats the telosb flash for 
+  StreamTransportC and TRD_TransportC to use.
+
+  If not formatted correctly, nothing will work.
+
+
+ - Jeongyeup Paek (Mar 15, 2006)
+

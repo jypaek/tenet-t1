@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# This scripts 
+# 1. takes a bmp image as input,
+# 2. reads it and convert it to data file,
+# 3. run simple run-length-encoding with threshold to compress,
+# 4. decode/decompress the encoded/compressed data,
+# 5. and then re-construct the image.
+
+#
+# @author: Jeongyeup Paek (jpaek@enl.usc.edu)
+#
+
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <bmp-filename> <thresh>"
+    echo " ex>   $0 hello.bmp 20"
+    exit 1;
+fi
+
+bfname=$1
+thresh=$2
+shift
+shift
+
+echo ""
+
+./../bmp/bmp2dat $bfname "_tmp_s.dat"
+./simple_trle -t $thresh "_tmp_s.dat" "_tmp_s_enc.dat"
+./simple_trle -u "_tmp_s_enc.dat" "_tmp_s_dec.dat"
+./../bmp/dat2bmp "_tmp_s_dec.dat" "re$thresh-$bfname"
+
+

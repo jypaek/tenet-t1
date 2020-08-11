@@ -1,0 +1,41 @@
+# All shared dirs and other inter-contrib stuff needs to go here
+# Potentially HOSTMOTEDIR can be placed here as well
+
+ifndef TENETDIR
+$(error TENETDIR UNDEFINED)
+endif
+EMSTARDIR := $(TENETDIR)/master/emstar_lib
+
+ifndef TOSDIR
+$(error TOSDIR UNDEFINED)
+else
+ifdef MAKERULES
+include $(MAKERULES)
+else
+include $(TOSDIR)/../apps/Makerules
+endif
+endif
+
+INCLUDE_PATH := $(TENETDIR)/master/contrib
+#$(warning INCLUDE_PATH is $(INCLUDE_PATH))
+
+PROGRAMMER_EXTRA_FLAGS := -dno-poll -v=2 
+
+CFLAGS += -I$(INCLUDE_PATH)/include 
+
+CFLAGS += -I$(EMSTARDIR)
+
+#CFLAGS += -I$(TOSDIR)/.. -I$(TOSDIR)
+
+CFLAGS += -I$(TENETDIR)/master/contrib -I$(TENETDIR)/master -I$(TENETDIR)/master/include/Emstar/mote/emtos -I$(TENETDIR)/mote/lib/centroute/lib/tos/system/ -I$(TENETDIR)/mote/lib/centroute/apps/dse/tos/system/ -I$(TENETDIR)/mote/lib/centroute/apps/sequentialEEPROM/tos/lib/ -I$(TENETDIR)/mote/lib/centroute/apps/mDTN/tos/lib/  -I$(TENETDIR)/mote/lib/centroute/apps/mDTN/tos/interfaces/ -I$(TENETDIR)/mote/lib/centroute/apps/sequentialEEPROM/tos/interfaces/ -I$(TENETDIR)/mote/lib/centroute/apps/RouteToApp -I$(TENETDIR)/mote/lib/centroute/apps/dse/interfaces/ -I$(TENETDIR)/mote/lib/centroute/apps/SensorIB/tos/interfaces -I$(TENETDIR)/mote/lib/centroute/apps/SensorIB/tos/sensorboards/mda300ca/ -I$(TENETDIR)/mote/lib/centroute/apps/SensorIB/tos/lib/ -I$(TENETDIR)/mote/lib/centroute/apps/SensorIB/tos/platform/mica2/ -I$(TENETDIR)/mote/lib/centroute/apps/reset_count/tos/interfaces/ -I$(TENETDIR)/mote/lib/centroute/apps/reset_count/tos/lib -I$(TENETDIR)/master/emstar_lib/misc_include/ -I$(TENETDIR)/mote/lib/centroute/lib/tos/interfaces/ -I$(TENETDIR)/mote/lib/centroute/lib/EmTos/interfaces/ -I$(TENETDIR)/mote/lib/centroute/apps/NodeHealth/tos/system -I$(TENETDIR)/mote/lib/centroute/apps/NodeHealth/tos/interfaces -I$(TENETDIR)/mote/lib/router/ -I$(TENETDIR)/mote/lib/trd/
+ 
+# -I$(TENETDIR)/mote/lib/centroute/lib/EmTos/system/
+
+CFLAGS += $(patsubst %, -I$(INCLUDE_PATH)/%/tos/interfaces, $(CONTRIB_INCLUDES)) \
+		  $(patsubst %, -I$(INCLUDE_PATH)/%/tos/platform/$(PLATFORM), $(CONTRIB_INCLUDES)) \
+          $(patsubst %, -I$(INCLUDE_PATH)/%/tos/system, $(CONTRIB_INCLUDES)) \
+          $(patsubst %, -I$(INCLUDE_PATH)/%/tos/lib, $(CONTRIB_INCLUDES)) \
+          $(patsubst %, -I$(INCLUDE_PATH)/%/tos/sensorboards/$(SENSORBOARD), $(CONTRIB_INCLUDES)) \
+
+#LDFLAGS += -L$(EMSTARDIR)/obj.i686-linux/ $(TENETDIR)/emstar/emstar/obj.i686-linux/lib/libemstar_sockets.a emstar_sockets
+LDFLAGS += $(EMSTARDIR)/obj.i686-linux/libemstar_sockets.a

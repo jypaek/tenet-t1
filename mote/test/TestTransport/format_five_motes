@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd ../FormatTelosbFlash
+pwd
+mtelosb 1 USB0
+mrtelosb 2 USB1
+mrtelosb 3 USB2
+mrtelosb 4 USB3
+mrtelosb 5 USB4
+cd -
+

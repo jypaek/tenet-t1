@@ -1,0 +1,5 @@
+number_of_nodes=1;
+{
+	command="/localhome/tenet/tools/sf/sf";
+	arg="9001 /dev/ttyS0 57600 mica2";
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+blinktelosb USB0
+blinktelosb USB1
+blinktelosb USB2
+blinktelosb USB3
+blinktelosb USB4
+#blinkmicaz S0
+

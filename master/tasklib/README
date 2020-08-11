@@ -1,0 +1,26 @@
+
+
+# Compiling
+  "make" will generate two library files:
+  - libtenet.a
+  - armlibtenet.a
+  - cpplibtenet.a
+
+
+# Including the libarary
+
+  Tenet application writer should:
+  - include "tenet.h" in their application, and
+  - include "libtenet.a" library file into compilation of their application.
+    ("libtenet_arm.a" for arm processor)
+    ("libtenet_cpp.a" for c++ compilation of your application)
+
+
+# MEMO
+  - The "construct_task()" function takes a task description string
+    and composes a task description packet.
+  - "element_usage.h" file has the printf files for showing how to use tasklets.
+
+
+- Jeongyeup
+

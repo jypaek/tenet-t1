@@ -1,0 +1,312 @@
+#!/bin/sh
+##
+# "Copyright (c) 2006 University of Southern California.
+# All rights reserved.
+#
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the following two paragraphs and the author appear in all
+# copies of this software.
+#
+# IN NO EVENT SHALL THE UNIVERSITY OF SOUTHERN CALIFORNIA BE LIABLE TO
+# ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+# DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS
+# DOCUMENTATION, EVEN IF THE UNIVERSITY OF SOUTHERN CALIFORNIA HAS BEEN
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THE UNIVERSITY OF SOUTHERN CALIFORNIA SPECIFICALLY DISCLAIMS ANY
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+# PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+# SOUTHERN CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
+# SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+#
+##
+
+##
+# Tenet binary distribution generation script
+#
+# Authors: Ki-Young Jang
+# Embedded Networks Laboratory, University of Southern California
+# Modified: 6/20/2007
+##
+
+Help()
+{
+    echo
+    echo "Usage: ./create_dist [Version] [options]"
+    echo "options> "
+    echo "  -t [TARGET]   : set the TARGET"
+    echo "                  TARGET should be one of FedoraCore, Cygwin and stargate."
+    echo "                  (default : the current OS)"
+    echo "  -d [DIST_DIR] : set the location where the result file is created"
+    echo "                  (default : ${TENET_ROOT}/dist)"
+    echo "  -c            : make tarball"
+    echo
+    exit 1
+}
+
+GetTenetHostOS()
+{
+    GET_TENET_HOST_OS=$(uname -a | grep "GNU/Linux")
+
+    if [ "" != "$GET_TENET_HOST_OS" ]
+    then
+        GET_TENET_HOST_OS="FedoraCore"
+    else
+
+        GET_TENET_HOST_OS=$(uname -a | grep "Cygwin")
+
+        if [ "" != "$GET_TENET_HOST_OS" ]
+        then
+            GET_TENET_HOST_OS="Cygwin"
+        else
+
+            GET_TENET_HOST_OS=$(uname -a | grep "pxa")
+
+            if [ "" != "$GET_TENET_HOST_OS" ]
+            then
+                GET_TENET_HOST_OS="stargate"
+            else
+                GET_TENET_HOST_OS="Unknown"
+                echo "[Error] TENET install script failed to find your operating system."
+                echo "[Error] TENET binary distribution may not support your operating system."
+                exit 1
+            fi
+        fi
+    fi
+}
+
+Error()
+{
+    echo "[Error] $1"
+    exit 0
+}
+
+DIR=`dirname $0`
+OLD_PWD=`pwd`
+DIR=`cd $DIR ; pwd`
+TARGET=""
+DIST_DIR="dist"
+VERSION=""
+DIST_NAME=""
+TARBALL=0
+
+echo
+echo "SCRIPT LOCATION : ${DIR}"
+
+while getopts t:d:c opt
+do
+    case "$opt" in
+
+        t) TARGET="$OPTARG";
+echo "TARGET=$TARGET"
+           ;;
+        d) DIST_DIR="$OPTARG";
+           ;;
+        c) TARBALL=1;
+           ;;
+        esac 
+done
+            
+shift $(($OPTIND - 1))
+
+VERSION=$1
+
+echo "TARGET=$TARGET"
+if [ "$TARGET" == "" ]
+then
+    GetTenetHostOS
+    TARGET=${GET_TENET_HOST_OS}
+fi
+
+[ "$TARGET" == "arm-linux" ] && TARGET="stargate"
+
+DIST_NAME="tenet-${VERSION}.${TARGET}.tar.gz" 
+TENET_SRC_ROOT=`cd ${DIR}/..; pwd`
+TENET_DIST_DIR="${DIST_DIR}/tenet"
+
+
+if [ "$TARGET" == "Unknown" ] || [ "$TARGET" != "FedoraCore" -a "$TARGET" != "Cygwin" -a "$TARGET" != "stargate" ]
+then 
+	echo "[Error] Unknown TARGET(${TARGET})"
+	Help
+fi
+
+[ "$VERSION" == "" ] && Help || echo
+
+[ ${TARBALL} == 1 ] && echo "This script will create a Tenet binary distribution(${DIST_NAME}) with following options" \
+  || echo "This script will install Tenet with following options"
+echo "    TARGET=${TARGET}"
+echo "    DIST_DIR=${DIST_DIR}"
+echo "    VERSION=${VERSION}"
+echo "    TENET_SRC_ROOT=${TENET_SRC_ROOT}"
+
+
+DEST_DIR=""
+
+CreateDirectory()
+{
+    DEST_DIR="$1"
+    echo ""
+    echo "Creating ${TENET_DIST_DIR}/${DEST_DIR}"
+    mkdir ${TENET_DIST_DIR}/${DEST_DIR}
+}
+
+CopyFile2Dest()
+{
+    echo "    Copying ${TENET_SRC_ROOT}/${DEST_DIR}/$1"
+
+    [ -r ${TENET_SRC_ROOT}/${DEST_DIR}/$1 ] \
+        && ( [ "$2" == "" ] && cp -r ${TENET_SRC_ROOT}/${DEST_DIR}/$1  ${TENET_DIST_DIR}/${DEST_DIR} \
+           || cp -r ${TENET_SRC_ROOT}/${DEST_DIR}/$1  ${TENET_DIST_DIR}/${DEST_DIR}/$2 ) \
+        || Error "${TENET_SRC_ROOT}/${DEST_DIR}/$1 is missing."
+}
+
+# Make
+cd ${TENET_SRC_ROOT}
+[ "${TARGET}" == "stargate" ] && make arm || make all
+
+cd ${TENET_SRC_ROOT}/mote/apps/BaseStation
+make telosb DEFAULT_LOCAL_GROUP=0x11 
+make micaz DEFAULT_LOCAL_GROUP=0x11 
+
+cd ${TENET_SRC_ROOT}/mote/apps/Tenet
+make telosb DEFAULT_LOCAL_GROUP=0x11
+make micaz DEFAULT_LOCAL_GROUP=0x11
+
+cd ${TENET_SRC_ROOT}/mote/apps/FormatTelosbFlash
+make telosb DEFAULT_LOCAL_GROUP=0x11
+make micaz DEFAULT_LOCAL_GROUP=0x11
+
+cd ${DIR}
+
+rm -rf ${DIST_DIR}
+mkdir ${DIST_DIR}
+
+CreateDirectory /
+  CopyFile2Dest setup 
+  CopyFile2Dest tenet 
+  CopyFile2Dest README
+  CopyFile2Dest RELEASE_NOTE
+
+
+CreateDirectory master
+
+CreateDirectory master/router
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest router router || CopyFile2Dest arouter router
+
+CreateDirectory master/transport
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest transport transport || CopyFile2Dest atransport transport
+
+CreateDirectory master/tasklib
+  CopyFile2Dest tenet.h
+  CopyFile2Dest response.h
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest libtenet.a libtenet.a || CopyFile2Dest libtenet_arm.a libtenet.a
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest libtenet_cpp.a libtenet.a || CopyFile2Dest libtenet_arm_cpp.a libtenet_cpp.a
+
+CreateDirectory master/pylib
+  CopyFile2Dest tenet.py  
+  CopyFile2Dest transport.py  
+  CopyFile2Dest transport_py24.py  
+  CopyFile2Dest transport_py25.py
+
+  [ "${TARGET}" == "Cygwin" ] && CopyFile2Dest _transport_py24.dll  #(Cygwin only)
+  [ "${TARGET}" == "Cygwin" ] && CopyFile2Dest _transport_py25.dll  #(Cygwin only)  
+  [ "${TARGET}" == "FedoraCore" ] && CopyFile2Dest _transport.so        #(FC or stargate only)
+
+CreateDirectory apps
+
+CreateDirectory apps/example_app
+  CopyFile2Dest example_app.c  
+  CopyFile2Dest blink.c  
+  CopyFile2Dest example_app  
+  CopyFile2Dest blink  
+  CopyFile2Dest Makefile
+
+CreateDirectory apps/netviz
+  CopyFile2Dest README  
+  CopyFile2Dest Dialog.py  
+  CopyFile2Dest MultiListbox.py  
+  CopyFile2Dest netviz.py  
+  CopyFile2Dest pingtree.py  
+  CopyFile2Dest sendtask.py  
+  CopyFile2Dest tenet.gif
+
+CreateDirectory apps/collect
+  CopyFile2Dest README  
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest collect || CopyFile2Dest acollect collect
+              
+CreateDirectory apps/coverIt
+  CopyFile2Dest README 
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest coverIt || CopyFile2Dest acoverIt coverIt
+              
+CreateDirectory apps/pingtree
+  CopyFile2Dest README 
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest pingtree || CopyFile2Dest apingtree pingtree
+              
+CreateDirectory apps/send_task
+  CopyFile2Dest README  
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest send_task || CopyFile2Dest asend_task send_task
+              
+CreateDirectory apps/system
+  CopyFile2Dest README  
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest system || CopyFile2Dest asystem system
+              
+CreateDirectory apps/xmasTree
+  CopyFile2Dest README  
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest xmasTree || CopyFile2Dest axmasTree xmasTree
+        
+#CreateDirectory apps/imaging
+#  CopyFile2Dest README  
+#  [ "${TARGET}" != "stargate" ] && CopyFile2Dest imaging || CopyFile2Dest aimaging imaging
+
+CreateDirectory apps/deliverytest
+  CopyFile2Dest README  
+  [ "${TARGET}" != "stargate" ] && CopyFile2Dest deliverytest || CopyFile2Dest adeliverytest deliverytest
+
+CreateDirectory mote
+
+CreateDirectory mote/apps
+
+CreateDirectory mote/apps/BaseStation
+  CopyFile2Dest build 
+
+CreateDirectory mote/apps/Tenet
+  CopyFile2Dest build 
+
+CreateDirectory mote/test
+
+CreateDirectory mote/test/FormatTelosbFlash
+  CopyFile2Dest build 
+
+CreateDirectory tools
+CreateDirectory tools/sf
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest sf sf || CopyFile2Dest asf sf 
+	[ "${TARGET}" != "stargate" ] && CopyFile2Dest sflisten sflisten || CopyFile2Dest asflisten sflisten
+
+CreateDirectory tools/programming
+  CopyFile2Dest install_BaseStation
+  CopyFile2Dest install_Tenet
+  CopyFile2Dest install_mote
+  CopyFile2Dest set-mote-id
+
+cp -r ${TENET_SRC_ROOT}/doc ${DIST_DIR}/tenet
+#cp -r ${TENET_SRC_ROOT}/README ${DIST_DIR}/tenet
+#cp -r ${TENET_SRC_ROOT}/RELEASE_NOTE ${DIST_DIR}/tenet
+
+cd ${DIST_DIR}
+echo "Tenet binary distribution version ${VERSION} for ${TARGET}" > tenet/.dist
+mv tenet tenet-${VERSION}
+
+[ ${TARBALL} == 0 ] && exit 0
+
+tar czvf ${DIST_NAME} tenet-${VERSION}
+
+echo
+echo "${DIST_DIR}/${DIST_NAME} is created."
+echo
+
+ls -al 
+

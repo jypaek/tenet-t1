@@ -1,0 +1,17 @@
+
+This directory is for the cyclops binary:
+ the software that goes on to the cyclops.
+
+Compile by,
+ $ make cyclops
+
+If this doesn't work, you might want to copy
+  ../../platform/cyclops/cyclops.target
+file to
+  $TOSDIR/../tools/make/
+(e.g. /opt/tinyos-1.x/tools/make/cyclops.target)
+
+Upload to the cyclops by,
+ $ make cyclops install mib510,/dev/ttyS0
+
+

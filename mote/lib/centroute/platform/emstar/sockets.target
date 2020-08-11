@@ -1,0 +1,87 @@
+#-*-Makefile-*- vim:syntax=make
+#$Id: sockets.target,v 1.1 2007-11-17 00:55:24 karenyc Exp $
+
+ifndef EMSTAR_ROOT
+$(error EMSTAR_ROOT UNDEFINED)
+endif
+
+PLATFORM = emstar
+ifndef SENSORBOARD
+  SENSORBOARD = micasb
+endif
+OPTFLAGS += -g -fnesc-no-inline
+
+#deluge support
+ifdef TINYOS_NP
+  ifeq ($(TINYOS_NP),BNP)
+      PFLAGS += -I%T/lib/Deluge
+      PFLAGS += -I%T/lib/Deluge/TOSBoot/include
+  endif
+endif
+
+CONTRIB_INCLUDES += EmTos
+EMTOSDIR := $(EMSTAR_ROOT)/tos-contrib/EmTos/tos
+# if we have gcc 4, add those extra flags
+ifdef HAVE_GCC_4
+CFLAGS += -D__HAVE_GCC_4 -Wno-pointer-sign
+endif
+CFLAGS += -g -I$(EMTOSDIR)/platform/$(PLATFORM) \
+			-I$(EMTOSDIR)/interfaces \
+			-I$(EMTOSDIR)/system \
+	    		-I$(EMSTAR_ROOT) -I$(EMSTAR_ROOT)/include \
+			$(EMSTAR_MOTE_FREQ)
+
+
+
+EMFLAGS := -I$(EMSTAR_ROOT)/include $(GLIB_CFLAGS)
+
+#
+#  The EmStar make system passes in various options...
+#
+#  EMTOS_MAKE_OBJDIR = obj.i686-linux, etc
+#  EMTOS_MAKE_CC = the CC variable
+#  EMTOS_MAKE_GCCINCLUDE = includes that are needed by gcc that ncc screws up
+#  EMTOS_MAKE_LDFLAGS = standard libs including glib
+#
+
+ifdef EMSTAR_MAKE
+  EMOBJ := $(EMSTAR_ROOT)/$(EMTOS_MAKE_OBJDIR)
+  PFLAGS += -gcc=$(EMTOS_MAKE_CC) -fdollars-in-identifiers $(EMTOS_MAKE_GCCINCLUDE)
+else
+  EMOBJ := $(EMSTAR_ROOT)/obj.i686-linux
+endif
+
+PFLAGS += -fnesc-nido-tosnodes=1 -fnesc-cfile=$(BUILDDIR)/app.c $(EMFLAGS)
+
+ifeq ($(USE_SHARED),1)
+  LIB_SUFFIX = .so
+else
+  LIB_SUFFIX = .a
+endif
+
+CFLAGS += -DEMSTAR_NO_KERNEL -DPLATFORM_EMSTAR -I$(EMSTAR_ROOT)/devel/emstar_sockets 
+
+LDFLAGS += $(EMOBJ)/lib/libsync$(LIB_SUFFIX) \
+  $(EMOBJ)/lib/libsmacstats$(LIB_SUFFIX) $(EMOBJ)/lib/libemstar_sockets$(LIB_SUFFIX)\
+ $(EMOBJ)/lib/libevent$(LIB_SUFFIX) \
+ $(EMOBJ)/lib/liblink$(LIB_SUFFIX) 
+
+#LDFLAGS += $(EMOBJ)/lib/libsync$(LIB_SUFFIX) \
+  $(EMOBJ)/lib/libsmacstats$(LIB_SUFFIX) $(EMOBJ)/lib/libemtos$(LIB_SUFFIX)\
+ $(EMOBJ)/lib/libevent$(LIB_SUFFIX) \
+ $(EMOBJ)/lib/liblink$(LIB_SUFFIX) $(EMOBJ)/lib/libemrun$(LIB_SUFFIX) \
+ $(EMOBJ)/lib/libdev$(LIB_SUFFIX) $(EMOBJ)/lib/libmote$(LIB_SUFFIX) \
+ $(EMOBJ)/lib/libmisc$(LIB_SUFFIX) $(EMOBJ)/lib/libfusd$(LIB_SUFFIX) $(EMOBJ)/lib/libsync$(LIB_SUFFIX) $(EMOBJ)/lib/libdev$(LIB_SUFFIX) 
+
+
+ifdef EMSTAR_MAKE
+  LDFLAGS += $(EMTOS_MAKE_LDFLAGS)
+else
+  LDFLAGS += -lglib-2.0 -lpthread
+endif
+
+$(call TOSMake_include_platform,avr)
+
+emstar: $(BUILD_DEPS)
+	@:
+

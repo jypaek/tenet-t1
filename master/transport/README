@@ -1,0 +1,28 @@
+
+this README is not ready yet.
+
+but....
+
+the API files that the application must use are:
+    transportAPI.h
+    transportAPI.c
+
+'transportAPI.h' has the declaration of the functions that the application
+can use to send task packets and close tasks.
+
+the files that the application should include while compiling are:
+    tr_if.h
+    tr_if.c
+    
+    
+/////////////////////////////////////////////////////////
+
+also...
+
+the API files that the application might want to use are:
+    serviceAPI.h
+    serviceAPI.c
+
+the files that the application might want to include while compiling are:
+    service_if.h
+    service_if.c

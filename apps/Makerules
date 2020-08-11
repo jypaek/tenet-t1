@@ -1,0 +1,16 @@
+
+ifndef MASTERPATH
+    MASTERPATH = ../../master
+endif
+
+LIBPATH = $(MASTERPATH)/tasklib
+
+CFLAGS += -DBUILDING_PC_SIDE
+CFLAGS += -I$(LIBPATH)
+CFLAGS += -I$(MASTERPATH)/include
+
+TENET_LIB       = $(LIBPATH)/libtenet.a
+TENET_LIB_ARM   = $(LIBPATH)/libtenet_arm.a
+TENET_LIB_CPP   = $(LIBPATH)/libtenet_cpp.a
+TENET_LIB_ARM_CPP = $(LIBPATH)/libtenet_arm_cpp.a
+

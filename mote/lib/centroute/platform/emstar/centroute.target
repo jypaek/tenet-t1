@@ -1,0 +1,35 @@
+#-*-Makefile-*- vim:syntax=make
+#$Id: centroute.target,v 1.1 2007-11-17 00:55:24 karenyc Exp $
+
+EMSTAR_ROOT := $(EMSTARDIR)
+
+PLATFORM = centroute
+MAKECMDGOALS = centroute
+
+ifndef SENSORBOARD
+  SENSORBOARD = micasb
+endif
+
+EMTOSDIR := $(TENETDIR)/master/contrib/EmTos/tos
+
+# if we have gcc 4, add those extra flags
+ifdef HAVE_GCC_4
+CFLAGS += -D__HAVE_GCC_4 -Wno-pointer-sign
+endif
+CFLAGS += -I$(TENETDIR)/master/include/Emstar 
+
+ifeq ($(USE_SHARED),1)
+  LIB_SUFFIX = .so
+else
+  LIB_SUFFIX = .a
+endif
+
+CFLAGS += -DEMSTAR_NO_KERNEL -DPLATFORM_EMSTAR -I$(EMSTAR_ROOT)/devel/emstar_sockets 
+
+LDFLAGS += $(TENETDIR)/master/lib/emstar_sockets/obj.i686-linux/libemstar_sockets$(LIB_SUFFIX)
+
+$(call TOSMake_include_platform,avr)
+
+centroute: $(BUILD_DEPS)
+	@:
+

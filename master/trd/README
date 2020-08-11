@@ -1,0 +1,17 @@
+
+If you are using the trd system,
+you must access the system using the interfaces defined in "trd_interface.h".
+Also, you must implement the functions that are required in "trd_interface.h".
+
+If you are using the trd transport on top of trd_,
+you must access the system using the interfaces defined in "trd_transport.h".
+Also, you must implement the functions that are required in "trd_transport.h".
+
+Note that in each case, you must call the function 'polling_trd_*'
+frequently to poll the trickle timer inside trd timer. (at least every 100ms).
+I know this is a pain. But you must!
+TRD used to implement it's own internal timer mechanism (itimer), but
+this caused problems when SIGNAL's are used in any way.
+
+- jpaek (Feb. 25. 2006)
+

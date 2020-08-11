@@ -1,0 +1,253 @@
+
+#################################################
+# Set Path..........
+#################################################
+TENETDIR := ../..
+TENETLIB := $(TENETDIR)/lib
+TENETPLATFORM := $(TENETDIR)/platform
+
+TASKLETS = $(TENETDIR)/tasklets
+PLATFORMTASKLETS = $(TASKLETS)/platform
+
+ifndef NP
+    # No network programming... save ROM/RAM.
+    TINYOS_NP := NONE 
+endif
+
+
+#################################################
+# Include TinyOS Makerules
+#################################################
+ifndef MAKERULES
+MAKERULES=$(shell ncc -print-tosdir)/../apps/Makerules
+endif
+include $(MAKERULES)
+
+
+#################################################
+# radio
+#################################################
+# telosb, micaz, imote2 uses CC2420
+ifeq ($(PLATFORM),telosb)
+    RADIO_CHIP = CC2420
+endif
+ifeq ($(PLATFORM),micaz)
+    RADIO_CHIP = CC2420
+    PROCESSOR = ATMEGA128
+endif
+ifeq ($(PLATFORM),imote2)
+    RADIO_CHIP = CC2420
+endif
+# mica2, mica2dot uses CC1000
+ifeq ($(PLATFORM),mica2)
+    RADIO_CHIP = CC1000
+    PROCESSOR = ATMEGA128
+endif
+ifeq ($(PLATFORM),mica2dot)
+    RADIO_CHIP = CC1000
+    PROCESSOR = ATMEGA128
+endif
+
+
+#################################################
+# router
+#################################################
+TENETINC += -I$(TENETLIB)/router
+ifdef RSSI_ROUTER
+    TENETINC += -I$(TENETLIB)/router/MultiHopRSSI
+    TENETDEF += -DRSSI_ROUTER=1
+else
+    # telosb, micaz, imote2 uses MultiHopLQI
+    ifeq ($(RADIO_CHIP),CC2420)
+        TENETINC += -I$(TENETLIB)/router/MultiHopLQI
+    endif
+    # mica2, mica2dot uses MultiHopRSSI
+    ifeq ($(RADIO_CHIP),CC1000)
+        TENETINC += -I$(TENETLIB)/router/MultiHopRSSI
+    endif
+endif
+ifdef MOTE_TO_MOTE_ROUTING
+    TENETDEF += -DCHILD_BEACON
+endif
+
+
+#################################################
+# transport
+#################################################
+TENETINC += -I$(TENETLIB)/transport
+
+
+#################################################
+# trd
+#################################################
+TENETINC += -I$(TENETLIB)/trd
+
+# imote2 has lot of RAM :-)
+ifeq ($(PLATFORM),imote2)
+    CFLAGS += -DRAM_TRD=1
+endif
+
+
+#################################################
+# Host mote for Cyclops
+#################################################
+ifdef CYCLOPS_HOST
+    TENETINC += -I$(TENETLIB)/cyclops
+    TENETINC += -I$(TENETLIB)/cyclops/I2C
+    TENETINC += -I$(TENETLIB)/cyclops/neuron
+    TENETINC += -I$(TENETPLATFORM)/$(PLATFORM)/CyclopsHost
+    # This includes Image tasklet for cyclops
+    TENETDEF += -DCYCLOPS_HOST=1
+    # Flash On/Off conf.
+    #TENETDEF += -DCYCLOPS_FLASH_ON_IS_CBI=1
+    # Reduce RAM usage for micaz
+    TENETDEF += -DNEIGHBOR_TABLE_SIZE=0
+    TENETDEF += -DCHILDREN_TABLE_SIZE=7
+    # Deluge must be disabled for Cyclops host
+    TINYOS_NP := NONE 
+    NO_TIMESYNC = 1
+endif
+
+
+###################################################
+# Host mote for MDA400 vibration board
+###################################################
+ifdef MDA400_HOST
+    TENETINC += -I$(TENETPLATFORM)/$(PLATFORM)/MDA400
+    # This includes SampleMda400 tasklet
+    TENETDEF += -DMDA400_HOST=1
+    TENETDEF += -DMDA400=1
+endif
+
+
+#################################################
+# timesync (FTSP)
+#################################################
+TENETINC += -I$(TENETLIB)/timer
+
+# include FTSP timesync as default
+ifndef NO_TIMESYNC
+    TENETINC += -I$(TENETLIB)/timesync
+    TENETDEF += -DGLOBAL_TIME=1
+endif
+
+
+#################################################
+# FIR Low Pass Filter configuration
+#################################################
+#TENETDEF += -DFIR_FILTER_ORDER=32
+# otherwise, 16
+#TENETDEF += -DFIR_FILTER_TYPE=1 #HAMMING
+#TENETDEF += -DFIR_FILTER_TYPE=2 #GAUSSIAN
+#TENETDEF += -DFIR_FILTER_TYPE=3 #CHEBYSHEV
+#TENETDEF += -DFIR_FILTER_TYPE=4 #KAISER -Default!
+
+
+#################################################
+# Task Testing (internally, without tasking)
+#################################################
+ifdef TASK_TESTING
+    TENETDEF += -DTASK_TESTING=1
+    TENETDEF += -D$(TASK_TESTING)=1
+    TENETINC += -I../../../master/tasklib
+    TENETINC += -I../../../master/include
+endif
+ifdef ONE_HOP_TASKING
+    TENETDEF += -DONE_HOP_TASKING=1
+endif
+
+
+#################################################
+# Platform dependent
+#################################################
+TENETINC += -I$(PLATFORMTASKLETS)/$(PLATFORM)
+TENETINC += -I$(TENETPLATFORM)/$(PLATFORM)
+
+# We have our own implementation of Timer for micaZ/mica2/mica2dot
+ifeq ($(PROCESSOR),ATMEGA128)
+    # Let's use SYSTIME instead of 32bitTimer!
+    SYSTIME=1
+    ifdef SYSTIME
+        TENETDEF += -DTIMESYNC_SYSTIME=1
+    else
+        TENETINC += -I$(TENETPLATFORM)/micaz/32bitTimer
+    endif
+endif
+
+# Memory stats functionality (for telosb only)
+ifeq ($(PLATFORM),telosb)
+    TENETINC += -DINSTRUMENTED_MEMORY
+endif
+
+# For compiling Cyclops device binary
+ifeq ($(PLATFORM),cyclops)
+    TENETINC += -I$(TENETPLATFORM)/cyclops/dev
+endif
+
+# All Tenet motes include tasklet/platform directory
+ifeq ($(PLATFORM),mica2)
+    # mica2 and micaz share the same tasklets
+    TENETINC += -I$(PLATFORMTASKLETS)/micaz
+    TENETINC += -I$(TENETPLATFORM)/micaz
+endif
+ifeq ($(PLATFORM),mica2dot)
+    TENETINC += -I$(TENETPLATFORM)/micaz
+endif
+
+# Imote2 uses pxa27x
+ifeq ($(PLATFORM),imote2)
+    TENETINC += -I$(TENETPLATFORM)/pxa27x
+endif
+
+
+#################################################
+# EMSTAR stuff
+#################################################
+ifeq ($(PLATFORM),emstar)
+    # define flags
+    CFLAGS += -g -DEMSTAR_NO_KERNEL -DRAM_TRD
+    # include flags
+    CFLAGS +=  -I$(TENETDIR)/../master/contrib -I$(TENETDIR)/../master -I$(TENETDIR)/../master/include/Emstar/mote/emtos  -I$(TENETDIR)/../mote/lib/centroute/apps/dse/tos/system/ -I$(TENETDIR)/../mote/lib/centroute/apps/sequentialEEPROM/tos/lib/ -I$(TENETDIR)/../mote/lib/centroute/apps/mDTN/tos/lib/  -I$(TENETDIR)/../mote/lib/centroute/apps/mDTN/tos/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/apps/sequentialEEPROM/tos/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/apps/dse/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/apps/SensorIB/tos/interfaces -I$(TENETDIR)/../mote/lib/centroute/apps/SensorIB/tos/sensorboards/mda300ca/ -I$(TENETDIR)/../mote/lib/centroute/apps/SensorIB/tos/lib/ -I$(TENETDIR)/../mote/lib/centroute/apps/SensorIB/tos/platform/mica2/ -I$(TENETDIR)/../mote/lib/centroute/apps/reset_count/tos/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/apps/reset_count/tos/lib   -I$(TENETDIR)/../mote/lib/centroute/lib/EmTos/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/apps/NodeHealth/tos/system -I$(TENETDIR)/../mote/lib/centroute/apps/NodeHealth/tos/interfaces  -I$(TENETDIR)/../mote/tasklets/ -I$(TENETDIR)/../master/emstar_lib -I$(TENETDIR)/../master/emstar_lib/misc_include
+    LDFLAGS += $(TENETDIR)/../master/emstar_lib/obj.i686-linux/libemstar_sockets.a
+endif
+
+# set of flags and paths needed if we use route adaptation     
+ifdef USE_ROUTE_ADAPTATION
+#TENETDIR=/home/karen/tenet
+CFLAGS+=-I$(TENETDIR)/../mote/lib/centroute/apps/RouteToAppTenet -I$(TENETDIR)/../mote/lib/centroute/apps/TreeLeaf -I$(TENETDIR)/../mote/lib/centroute/lib/tos/interfaces/ -I$(TENETDIR)/../mote/lib/centroute/lib/tos/system/ -I$(TENETDIR)/../master/emstar_lib/ -I$(TENETDIR)/../master/emstar_lib/misc_include/
+endif
+
+
+#################################################
+# Packet Size
+#################################################
+ifndef DATA_LENGTH
+    # using different size for telosb and micaz caused confusion
+    CFLAGS += -DTOSH_DATA_LENGTH=86
+else
+    CFLAGS += -DTOSH_DATA_LENGTH=$(DATA_LENGTH)
+endif
+
+
+#################################################
+# Packet Format
+#################################################
+ifneq ($(RADIO_CHIP),CC1000)
+ifndef USE_ROUTE_ADAPTATION
+    CFLAGS += -DOLD_TOS_MSG_FORMAT=1
+endif
+endif
+#  - OLD_TOS_MSG_FORMAT will convert CC2420 TOS_Msg format of telosb/micaz/etc
+#    into old CC1000 TOS_Msg format when sending packets over the UART.
+#  - this conversion is done by mote/lib/FramerM.nc
+#  - If undefined, will not to any conversion, and send whatever format 
+#    that is used for the radio. (which is different between mica2 and telosb)
+
+
+#################################################
+# include everything...
+#################################################
+TENETINC += -I. -I$(TASKLETS) -I$(TENETLIB)
+
+CFLAGS += $(TENETDEF) $(TENETINC)
+

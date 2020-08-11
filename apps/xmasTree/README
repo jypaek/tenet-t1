@@ -1,0 +1,20 @@
+XmastTree application makes all LEDS blink synchronously.
+
+This application first verify if all the nodes in the network are synchronized.
+If there is at least one node that is not synchronized, it will wait for it to synchronized.
+
+When all nodes are synchronized, the application will task for nodes to blink in the same time.
+
+Blink should be similar to CntToLeds behavior in TinyOs. Blinks should a value that is incremented every time.
+The difference is that here all nodes do this synchronosly!
+
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+
+RUN
+----
+./xmasTree
+
+HELP
+----
+./xmasTree -h

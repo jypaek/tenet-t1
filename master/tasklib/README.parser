@@ -1,0 +1,21 @@
+To test this in standalone mode, compile the tarball, then invoke
+the task parser as follows:
+
+./tp "reboot() -> user_button(5,4)-> sendto(74)"
+
+This should print out the list of constructors that get called.
+
+To incorporate this code to the task library, do the following: (This
+should work, but I couldn't test this out. If there are any bugs,
+please let me know).
+
+a) In tp.h, set TP_STANDALONE to 0, and TP_DEBUG to 0.
+b) Add the Makefile entries to the appropriate Makefiles
+c) From the task library, call tp_parse_task() (this is defined in tp.c).
+
+You should not need to touch parser.y and lexer.y. 
+
+Whenever a new element is added to the task library, you will need to
+follow the instructions in tp.c (search for the string "ADDITIONS TO TASK LIBRARY").
+
+Ramesh

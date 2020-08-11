@@ -1,0 +1,115 @@
+#!/bin/sh
+##
+# "Copyright (c) 2006 University of Southern California.
+# All rights reserved.
+#
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the following two paragraphs and the author appear in all
+# copies of this software.
+#
+# IN NO EVENT SHALL THE UNIVERSITY OF SOUTHERN CALIFORNIA BE LIABLE TO
+# ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+# DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS
+# DOCUMENTATION, EVEN IF THE UNIVERSITY OF SOUTHERN CALIFORNIA HAS BEEN
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THE UNIVERSITY OF SOUTHERN CALIFORNIA SPECIFICALLY DISCLAIMS ANY
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+# PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
+# SOUTHERN CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
+# SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+#
+##
+
+##
+# Tenet binary distribution setup script
+# This script performs
+#   - Set TENET_ROOT
+#   - Set TENET_HOST_OS
+#   - Add some symbolic links
+#
+# Authors: Ki-Young Jang
+# Embedded Networks Laboratory, University of Southern California
+# Modified: 2/6/2007
+##
+
+# Finding TENET_ROOT -----
+
+PROFILE=".bash_profile"
+TENET_ROOT=`dirname $0` 
+OLD_PWD=`pwd`
+cd $TENET_ROOT
+export TENET_ROOT=`pwd`
+cd $OLD_PWD
+echo "TENET_ROOT    : $TENET_ROOT"
+
+# Finding TENET_HOST_OS -----
+
+TENET_HOST_OS=$(uname -a | grep "GNU/Linux")
+
+if [ "" != "$TENET_HOST_OS" ]
+then
+	export TENET_HOST_OS="FedoraCore"
+else
+
+	TENET_HOST_OS=$(uname -a | grep "Cygwin")
+
+	if [ "" != "$TENET_HOST_OS" ]
+	then
+        	export TENET_HOST_OS="Cygwin"
+	else
+
+	        TENET_HOST_OS=$(uname -a | grep "pxa")
+
+        	if [ "" != "$TENET_HOST_OS" ]
+	        then
+        	        export TENET_HOST_OS="stargate"
+	        else
+			echo "TENET install script failed to find your operating system."
+			echo "TENET binary distribution may not support your operating system."
+			exit 1
+		fi
+	fi
+fi
+
+echo "TENET_HOST_OS : $TENET_HOST_OS"
+
+# Add two ENV to .bashrc
+ 
+if [ -e $HOME/$PROFILE ]
+then
+	echo "export TENET_ROOT=\"$TENET_ROOT\"" >> $HOME/$PROFILE
+	echo "export TENET_HOST_OS=\"$TENET_HOST_OS\"" >> $HOME/$PROFILE
+else
+        echo "export TENET_ROOT=\"$TENET_ROOT\"" > $HOME/$PROFILE
+        echo "export TENET_HOST_OS=\"$TENET_HOST_OS\"" >> $HOME/$PROFILE
+fi
+
+# For Tenet binary distribution
+[ -e $TENET_ROOT/.dist ] || exit 0
+
+MOTE_PROGRAMMING_TOOL="MoteProgrammingTools.$TENET_HOST_OS.tar.gz"
+cd $TENET_ROOT/tools/programming
+
+[ -e $TENET_ROOT/tools/programming/$TENET_HOST_OS ] || \
+    ( echo ;\
+      echo "Setup script failed to find mote programming tools for $TENET_HOST_OS" ; \
+      echo "Now downloading the tools... Please wait..." ; \
+      echo ;\
+      wget http://testbed.usc.edu/${MOTE_PROGRAMMING_TOOL} )
+
+# untar the file
+[ -e ${MOTE_PROGRAMMING_TOOL} ] &&
+    ( tar xzvf MoteProgrammingTools.$TENET_HOST_OS.tar.gz ; \
+      rm -rf MoteProgrammingTools.$TENET_HOST_OS.tar.gz )
+
+# Add some symbolic links
+[ -e $TENET_ROOT/tools/programming/$TENET_HOST_OS ] && \
+    ( ln -s $TENET_ROOT/tools/programming/$TENET_HOST_OS/motelist $TENET_ROOT/tools/programming/motelist; \
+      echo "Done.") || \
+    ( echo "Setup script failed to install mote programming tools for $TENET_HOST_OS"; \
+      echo "You may need to install them manually." )
+

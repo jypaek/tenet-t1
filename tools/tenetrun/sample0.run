@@ -1,0 +1,5 @@
+number_of_nodes=1;
+{
+	command="/home/naik/emstar/obj.i686-linux/link/udpd";
+	arg="-d eth0 -p 6951";
+}

@@ -1,0 +1,22 @@
+
+# Packet Format
+#  - OLD_TOS_MSG_FORMAT will convert CC2420 TOS_Msg format of telosb/micaz/etc
+#    into old CC1000 TOS_Msg format when sending packets over the UART.
+#  - this conversion is done by mote/lib/FramerM.nc
+#  - If undefined, will not to any conversion, and send whatever format 
+#    that is used for the radio. (which is different between mica2 and telosb)
+CFLAGS += -DOLD_TOS_MSG_FORMAT=1
+
+
+# below definition of "BUILDING_PC_SIDE" is used in stargate/task/* files
+# they allow the PC-side and mote to share the task contructing functions.
+CFLAGS += -DBUILDING_PC_SIDE=1
+
+
+# Maximum TOS_Msg data length
+# - This must be set to the value that can be supported by all the motes in the network
+#   (76 for micaz, 110 for telosb, and min(76,110) for mixed network)
+# - This value will govern the fragmentation of dissemination packet
+CFLAGS += -DTOSH_DATA_LENGTH=76
+
+

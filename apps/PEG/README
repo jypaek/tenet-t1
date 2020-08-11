@@ -1,0 +1,23 @@
+Pursuer Evader Game
+-------------------
+
+This directory should be used internally.
+It is not part of Tenet distribution software.
+
+It is a Tenet application that depends on the robotics library. 
+
+Requirements
+------------
+Need library lplayer from software player disponible at 
+http://playerstage.sourceforge.net/
+
+
+To run
+------
+-Turn robot Pioneer on
+-Enable it to move motors (paly white button)
+-Execute player client at robot
+-Execute particle filter (at this subdirectory pf_loc)
+-File rthTopology6.in represents the topology map.
+-Execute ./PEG rthTopology6.in -r
+-For usage, type ./PEG -anything

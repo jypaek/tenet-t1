@@ -1,0 +1,278 @@
+INTRODUCTION
+------------
+
+This "Multi-Master Tenet HOWTO" document describes how to install Tenet 
+on a mote network with a two (or more) "masters". It assumes that you are 
+generally familiar with installing software on the motes, and also 
+familiar with setting IP configurations on PC-class devices(laptop, etc).
+
+NOTE: Although this document is written to be self-contained, 
+it might be easier if you have understood the 'Single-Master' case first.
+
+
+Before you begin, you will need:
+
+- At least two PC class device. Currently, Tenet supports:
+   - a PC running Windows XP (Home or Pro) and Cygwin, or
+   - a PC running Linux Fedore Core (3, 4 or 5), or
+   - a Stargate running Linux.
+
+- At least two motes. Typically, one 'base station' mote per master,
+  plus additional number of motes for Tenet nodes are required.
+  The following two mote platforms are supported:
+   - Moteiv's TelosB
+   - Crossbow's MicaZ
+  Mixed network consisting of both MicaZ and TelosB are not fully tested.
+  Sample tasket not supported on MicaZ since there is no onboard sensor.
+
+- USB cables for TelosB. A programming board (such as the MIB510) for
+  the MicaZ. (Our instructions assume that you are using the MIB510;
+  if you are using a different programming board, you'll need to
+  appropriately modify the instructions. See FAQ.TENET).
+
+- IP connectivity between masters:
+   - Tenet master software uses IP overlay for routing between masters.
+     It assumes that there is underlying IP connectivity (regardless of
+     whether it is one-hop or multi-hop connectivity) between the masters,
+     and the tenet software does not setup this for you.
+   - In this instruction document, we will assume a simple 1-hop ad-hoc
+     WLAN connectivity between your masters: for example, both of your two 
+     laptops are on your desk and they can talk to each other using WLAN.
+     We assume that you know how to setup IP on your laptop, and that you
+     know about IP subnet, WLAN, Ad-hoc mode, etc.
+   - There are other ways in which you can set up IP connectivity between
+     your masters. For example, all of your masters can be connected to 
+     one access point. You can setup a manual static multihop routing 
+     between your masters. Or you can run 802.11b multi-hop routing 
+     protocols such as AODV or olsr. But we don't discuss these here.
+
+
+
+STEP 0: Downloading Binary Distribution
+---------------------------------------
+
+a. Download Tenet binary distribution from http://tenet.usc.edu
+
+b. Uncompress/untar the downloaded file:
+
+    % tar -xzvf tenet-2.0.(HOST_OS).tar.gz
+
+   A new directory 'tenet-2.0' (or 'tenet-x.x') will be created.
+   We will call this as 'tenet' directory in the rest of the document.
+
+
+
+STEP 1: Setting Environment Variables
+-------------------------------------
+
+a. Run the following command on tenet directory:
+
+    % ./setup
+    % source $HOME/.bash_profile
+  
+  'setup' script does following:
+    - Sets up a command in your .bash_profile to set
+      "TENET_ROOT" to be the root directory of the tenet software
+    - Sets up a command in your .bash_profile to set
+      "TENET_HOST_OS" as the operating system that you are using.
+      This is one of: 
+          o Stargate
+          o FedoraCore
+          o Cygwin
+      - Creates some symbolic links for Tenet applications on
+        $TENET_ROOT/master/apps.
+      - Creates 'motelist' symbolic link on $TENET_ROOT/tools/programming
+
+   NOTE: 'setup' script assumes that you are using the bash or Bourne
+   shell. If you use a different shell, your might run:
+
+   % bash
+
+   before executing the above instructions
+
+
+
+STEP 2: Setting IP address on the masters
+-----------------------------------------
+
+Let's say you have two masters:
+
+a. Set the IP of your Master1 to <YOUR.SUBNET.0.101>, and 
+   set the IP of your Master2 to <YOUR.SUBNET.0.102>.
+
+    % // we assume you know how to do this.
+
+   For example, let's say you configured your masters to have IP address 
+   10.0.0.101 and 10.0.0.102. You should remember the last 16-bit of the 
+   IP address: (0.101, and 0.102) for later instructions.
+
+  NOTE: All of your masters should be in the same subnet, and they should 
+  support IP broadcast within the subnet. Typically, we use 802.11b WLAN 
+  for this IP connectivity, but it can be any other wireless technology.
+  Check FAQ.Tenet for more information about IP broadcast and IP forwarding.
+
+
+
+STEP 3: Installing Tenet on the motes
+-------------------------------------
+
+
+Step 3.1: Installing the Tenet binary on one or more motes
+---------------------------------------------------------
+
+To install the Tenet binary on the remaining motes, follow these steps:
+
+a. Connect the mote to the master. If you are using TelosB on Cygwin,
+   you will need to install the FT232B driver from:
+       http://www.ftdichip.com/Drivers/VCP.htm
+
+b. Determine which serial device (e.g. /dev/ttyS0 for Fedora core or stargate) 
+   or COM port (e.g. COM5 for Cygwin) your mote is attached to. 
+   If you are using TelosB, you can determine the COM port using the command 
+   $TENET_ROOT/tools/programming/motelist.
+   If you are using MicaZ, you might have to find the device by trial and
+   error (trying all /dev/ttyS#, /dev/ttyUSB#, or COM#)
+   If you are using a TelosB on Cygwin and its COM port number is larger than 9,
+   you should use just the number instead of COM# (only for mote programming).                              
+
+c. Run the following command:
+
+    % $TENET_ROOT/tools/programming/install_Tenet <mote_type> <dev> <address>
+
+    - <dev> is the name of the serial device you determined in step b.
+    - <address> is a small 16bit integer address for the mote. 
+      We recommend assigning mote addresses starting at 1.
+    - <mote_type> should be 'telosb' or 'micaz'
+
+   If you are using TelosB (MoteIV), the Tenet binary installation script 
+   automatically formats the telosb flash. It takes around 30 seconds. 
+   Once it is done (the green LED (which looks like white) comes on), 
+   it starts to install Tenet on a mote.
+
+   If you are using MicaZ (Crossbow), the Tenet binary installation script
+   assumes that you are using MIB510 programming board. If you are using a
+   different programming board, see FAQ.TENET.
+
+   Repeat the above steps for all the motes you'd like to install Tenet on.
+   Don't forget that you should assign different <address> for each mote.
+   Once you're done, be sure to connect the "base station" mote to
+   the master before proceeding to the next step.
+
+
+Step 3.2: Installing the Base Station
+------------------------------------
+
+One mote (per one master) can acts as the "base station" on that master. 
+You will need to install the base station binary image on these motes. 
+To do so, follow these steps:
+
+a. Connect the mote to the master. If you are using TelosB on Cygwin,
+   you will need to install the FT232B driver from:
+       http://www.ftdichip.com/Drivers/VCP.htm
+
+b. Determine which serial device (e.g. /dev/ttyS0 for Fedora core or stargate) 
+   or COM port (e.g. COM5 for Cygwin) your mote is attached to. 
+   If you are using TelosB, you can determine the COM port using the command 
+   $TENET_ROOT/tools/programming/motelist.
+   If you are using MicaZ, you might have to find the device by trial and
+   error (trying all /dev/ttyS#, /dev/ttyUSB#, or COM#)
+   If you are using a TelosB on Cygwin and its COM port number is larger than 9,
+   you should use just the number instead of COM# (only for mote programming).                              
+
+   You might need to change the permission on your serial device:
+   
+    % chmod 666 <dev>
+    
+   where <dev> is your serial device.
+
+c. Run the following command to program 'base station' for Master1:
+
+    % $TENET_ROOT/tools/programming/install_BaseStation <mote_type> <dev> 101
+
+    - <dev> is the name of the serial device you determined in step b.
+    - '101' is the address for this base station mote.
+    - <mote_type> should be 'telosb' or 'micaz'
+
+   Now, disconnect and keep aside the "base station 101" mote. 
+   This mote will be used as the base station mote for Master1,
+   which has IP address YOUR.SUBNET.0.101
+    
+   Also, you need to program 'base station' for Master2 with following command:
+
+    % $TENET_ROOT/tools/programming/install_BaseStation -m <mote_type> -c <dev> 102
+
+   This mote will be used as the base station mote for Master2,
+   which has IP address YOUR.SUBNET.0.102
+   If you have more masters, repeat above to program more base station motes.
+   Just keep in mind that the address of the mote should match the
+   lower 16-bit of the IP address of that master.
+
+NOTE: Mote binaries were compiled with DEFAULT_LOCAL_GROUP=0x11 
+      CC2420_DEF_CHANNEL=26
+
+
+
+Step 4: Running Tenet master-stack on the master
+------------------------------------------------
+
+Now, re-connect your base-station mote (that you have installed in step 3.2)
+back to your master and determine the serial device which it is attached to.
+
+To run Tenet-stack on Master1, simply type:
+
+    % $TENET_ROOT/tenet start -i <inf> -c <dev>
+
+    - <inf> is the name of the network interface for communation among masters.
+      (e.g. wlan#, eth#) To see the list of your network interfaces, run
+      % $TENET_ROOT/master/bin/$TENET_HOST_OS/router -h      
+    - <dev> is the name of the device for the "base station" mote.
+
+   This command starts three different processes that run part of the
+   Tenet stack.
+   When this command returns, (it may take upto a minute, but usually less)
+   you can move to the next step.
+
+   Also, you need to run Tenet-stack on Master2 with following command:   
+
+    % $TENET_ROOT/tenet start -i <inf> -c <dev>
+
+   Repeat above for every master that you have. Just keep in mind that 
+   the address (in "-a" option) should match the lower 16-bit of the 
+   IP address of that master, and should match the address of the base
+   station mote on that master.
+
+
+
+Step 5: Running Applications
+----------------------------
+
+Now you can go to the application directory:
+
+    % cd $TENET_ROOT/apps
+
+
+This directory has several pre-compiled applications that we have included.
+You should be able to execute any of these applications.
+To understand what an application does, read README file or use the "-h" flag,
+which describes the application's function and usage.
+
+Try running more than one application concurrently (e.g. while
+obtaining periodic sensor samples using "collect", run "pingtree" to
+get a snapshot of the routing tree, and "system" to collect mote
+statistics).
+
+NOTE: Motes can return run-time 'error reports'. 
+      Don't worry when you see these on your screen since they are 
+      correct behavior, notifying the user of the in-mote errors.
+
+
+
+Step 6: Stopping Tenet
+----------------------
+
+To stop the Tenet stack on the master, simply type:
+
+  % $TENET_ROOT/tenet stop
+
+
+

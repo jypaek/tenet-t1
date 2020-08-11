@@ -1,0 +1,216 @@
+INTRODUCTION
+------------
+
+This document describes how to install Tenet on a mote network with a
+single "master". It assumes that you are generally familiar with
+installing software on the motes.
+
+Before you begin, you will need:
+
+- One PC class device. Currently, Tenet supports:
+   - a PC running Windows XP (Home or Pro) and Cygwin, or
+   - a PC running Linux Fedore Core (3, 4 or 5), or
+   - a Stargate running Linux.
+
+- At least two motes. The following two mote platforms are supported:
+   - Moteiv's TelosB
+   - Crossbow's MicaZ
+  Mixed network consisting of both MicaZ and TelosB are not fully tested.
+  Sample tasket not supported on MicaZ since there is no onboard sensor.
+
+- USB cables for TelosB. A programming board (such as the MIB510) for
+  the MicaZ. (Our instructions assume that you are using the MIB510;
+  if you are using a different programming board, you'll need to
+  appropriately modify the instructions. See FAQ.TENET).
+
+
+
+STEP 0: Downloading Binary Distribution
+---------------------------------------
+
+a. Download Tenet binary distribution from http://tenet.usc.edu
+
+b. Uncompress/untar the downloaded file:
+
+    % tar -xzvf tenet-2.0.(HOST_OS).tar.gz
+
+   A new directory 'tenet-2.0' (or 'tenet-x.x') will be created.
+   We will call this as 'tenet' directory in the rest of the document.
+
+
+
+STEP 1: Setting Environment Variables
+-------------------------------------
+
+a. Run the following command on tenet directory:
+
+    % ./setup
+    % source $HOME/.bash_profile
+  
+  'setup' script does following:
+    - Sets up a command in your .bash_profile to set
+      "TENET_ROOT" to be the root directory of the tenet software
+    - Sets up a command in your .bash_profile to set
+      "TENET_HOST_OS" as the operating system that you are using.
+      This is one of: 
+          o Stargate
+          o FedoraCore
+          o Cygwin
+      - Creates some symbolic links for Tenet applications on
+        $TENET_ROOT/apps.
+      - Creates 'motelist' symbolic link on $TENET_ROOT/tools/programming
+
+   NOTE: 'setup' script assumes that you are using the bash or Bourne
+   shell. If you use a different shell, your might run:
+
+   % bash
+
+   before executing the above instructions
+
+
+
+STEP 2: Installing Tenet on the motes
+-------------------------------------
+
+One of the motes acts as the "base station". Other remaining motes act
+as the "tenet nodes". The following steps describe how to install binary
+images to "tenet nodes" and a "base station" respectively.
+
+
+Step 2.1: Installing the Tenet binary on one or more motes
+---------------------------------------------------------
+
+To install the Tenet binary on the remaining motes, follow these steps:
+
+a. Connect the mote to the master. If you are using TelosB on Cygwin,
+   you will need to install the FT232B driver from:
+       http://www.ftdichip.com/Drivers/VCP.htm
+
+b. Determine which serial device (e.g. /dev/ttyS0 for Fedora core or stargate) 
+   or COM port (e.g. COM5 for Cygwin) your mote is attached to. 
+   If you are using TelosB, you can determine the COM port using the command 
+   $TENET_ROOT/tools/programming/motelist.
+   If you are using MicaZ, you might have to find the device by trial and
+   error (trying all /dev/ttyS#, /dev/ttyUSB#, or COM#)
+   If you are using a TelosB on Cygwin and its COM port number is larger than 9,
+   you should use just the number instead of COM# (only for mote programming).                              
+
+c. Run the following command:
+
+    % $TENET_ROOT/tools/programming/install_Tenet <mote_type> <dev> <address>
+
+    - <dev> is the name of the serial device you determined in step b.
+      (e.g. /dev/ttyS3, or /dev/ttyUSB2, or COM4)
+    - <address> is a small 16bit integer address for the mote. 
+      We recommend assigning mote addresses starting at 1.
+    - <mote_type> should be 'telosb' or 'micaz'
+
+   If you are using TelosB (MoteIV), the Tenet binary installation script 
+   automatically formats the telosb flash. This takes around 30 seconds.
+   While formatting, you might see a warning "Could not find symbol 
+   TOS_LOCAL_ADDRESS in main.exe, ignoring symbol". This is normal behavior.
+   First, the yellow LED (which looks like blue) comes on. Once it is done, 
+   the green LED (which looks like white) comes on. Then all LEDs go off and
+   it starts to install Tenet on the mote.
+
+   If you are using MicaZ (Crossbow), the Tenet binary installation script
+   assumes that you are using MIB510 programming board. If you are using a
+   different programming board, see FAQ.TENET.
+
+   Repeat the above steps for all the motes you'd like to install Tenet on.
+   Don't forget that you should assign different <address> for each mote.
+   See FAQ.TENET 5.1 for reserved addresses that you should not use.
+   Once you're done, be sure to connect the "base station" mote to
+   the master before proceeding to the next step.
+
+
+Step 2.2: Installing the Base Station
+------------------------------------
+
+One of the motes acts as the "base station". You will need to install
+a base station binary image on this mote. To do so, follow these steps:
+
+a. Connect the mote to the master. If you are using TelosB on Cygwin,
+   you will need to install the FT232B driver from:
+       http://www.ftdichip.com/Drivers/VCP.htm
+
+b. Determine which serial device (e.g. /dev/ttyS0 for Fedora core or stargate) 
+   or COM port (e.g. COM5 for Cygwin) your mote is attached to. 
+   If you are using TelosB, you can determine the COM port using the command 
+   $TENET_ROOT/tools/programming/motelist.
+   If you are using MicaZ, you might have to find the device by trial and
+   error (trying all /dev/ttyS#, /dev/ttyUSB#, or COM#)
+   If you are using a TelosB on Cygwin and its COM port number is larger than 9,
+   you should use just the number instead of COM# (only for mote programming).
+   
+   You might need to change the permission on your serial device:
+   
+    % chmod 666 <dev>
+    
+   where <dev> is your serial device.
+
+c. Run the following command:
+
+    % $TENET_ROOT/tools/programming/install_BaseStation <mote_type> <dev> 1000
+
+    - <dev> is the name of the serial device you determined in step b.
+    - '1000' is the address for this base station mote.
+    - <mote_type> should be 'telosb' or 'micaz'
+
+NOTE: Mote binaries were compiled with DEFAULT_LOCAL_GROUP=0x11 
+      CC2420_DEF_CHANNEL=26
+
+
+
+Step 3: Running Tenet master-stack on the master
+------------------------------------------------
+
+Now, make sure your base-station mote is connected (that you have installed in 
+step 2.2) back to your master and determine the serial device which it is attached to.
+
+To run Tenet-stack on the master, simply type:
+
+    % $TENET_ROOT/tenet start -a 1000 -c <dev>
+
+    - <dev> is the name of the device for the "base station" mote.
+    - '1000' is the address for this master, which matches the address 
+      of the base station mote attached to this master.
+
+   This command starts three different processes that run part of the
+   Tenet stack.
+   When this command returns, (it may take upto a minute, but usually less)
+   you can move to the next step.
+
+
+
+Step 4: Running Applications
+----------------------------
+
+Now you can move to the application directory:
+
+    % cd $TENET_ROOT/apps
+
+This directory has several pre-compiled applications that we have included.
+You should be able to execute any of these applications.
+To understand what an application does, read README file or use the "-h" flag, 
+which describes the application's function and usage.
+
+Try running more than one application concurrently (e.g. while
+obtaining periodic sensor samples using "collect", run "pingtree" to
+get a snapshot of the routing tree, and "system" to collect mote
+statistics).
+
+NOTE: Motes can return run-time 'error reports'. 
+      Don't worry when you see these on your screen since they may be
+      correct application behavior, notifying the user of the in-mote errors.
+
+
+
+Step 5: Stopping Tenet
+----------------------------------------
+
+To stop the Tenet stack on the master, simply type:
+
+    % $TENET_ROOT/tenet stop
+
+

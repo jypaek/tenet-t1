@@ -1,0 +1,451 @@
+
+
+       Tasking API
+       ===========
+
+
+
+1. INTRODUCTION
+---------------
+
+This document describes the usage of each tasklet in the Tenet tasking library,
+and syntax for writing the "task description string" which is equivalent to
+"contructing a task".
+
+An example of a task description string would be:
+
+  "Repeat(1000)->GlobalTime(0xAA)->NextHop(0xBB)->Count(0xCC)->Send()"
+
+which will task the motes to send packets periodically every one second 
+with time-synchronized global-time, nexthop (routing parent), 
+and an application-level sequence number.
+
+A task is constructed by composing one or more tasklets in a linear chain.
+There is no looping or braching. But there are couple of special tasklets
+that can control the issuance of a task or perform conditional execution.
+
+When writing your own application, all you need to do is to disseminate 
+a task into the network is to first construct a task description string, 
+and then pass that string to the 'send_task(char *s)' function as declared
+in the 'lib/tenet.h' file.
+
+To give you a feel of how it works, try out the pre-compiled example 
+application; 'send_task' application; in our Tenet binary distribution:
+
+  1. Goto the application directory:
+
+    % cd $TENET_ROOT/master/apps
+
+  2. Run 'send_task' application using the example task shown above:
+
+    % ./send_task "Wait(1000,1)->GlobalTime(10)->NextHop(11)->Count(12,1,1)->Send()"
+
+     Press <Ctrl-C> to stop.
+
+  3. Try turning on and off the LEDs of the motes:
+
+    % ./send_task "set_leds('7')"
+    % ./send_task "set_leds('0')"
+
+  4. Try a tinyos toy application, CntToLedsAndRfm:
+
+    % ./send_task "repeat(500)->count(5,0,1)->set_leds(5)->send()"
+
+  5. You can check the usage of any tasklet by using '-u' option:
+
+    % ./send_task -u wait       // see usage of 'wait'
+    % ./send_task -u g          // see usage of tasklets beginning with 'g'
+
+
+2. ATTRIBUTES
+-------------
+
+  In Tenet, all data are generated, manipulated, and sent in a form of an 
+  attribute. The following list discusses the syntax and semantics of 
+  attributes. It might be useful to think of attributes as variables in a 
+  programming language.
+
+    * Attributes have 16-bit unsigned interger tag as a name
+    * An attribute can either be a scalar (we support only one type: unsigned 
+      short) or a vector (an array of unsigned shorts), and this is determined 
+      from the context
+    * An attribute is implicitly defined in the first tasklet in which it is 
+      referenced
+    * When it is first defined, the attribute should be on the "LHS" of an 
+      operator.
+    * An attribute must be explicitly deleted
+    * Send() tasklet transmits all undeleted attributes 
+    * The following attribute names are reserved for special purpose: '0', '1'
+
+
+
+3. CONSTANTS
+------------
+
+  Some or the tasklets take either an attribute or a constant as an argument.
+  For example, to turn-on all three LEDs of a telosb(or micaz) mote, you can do:
+
+    % ./send_task "set_leds('7')
+  or
+    % ./send_task "constant(5, 7)->set_leds(5)"
+
+  Both commands will result in same behavior.
+  In the first example, '7' in quotes is a constant seven.
+  In the seconde example, and 5 is an attribute name five, and 7 is a constant 
+  seven.
+
+  In the tasklet API,for the arguments that explicitly say 'constant' or 
+  'attribute', the supplied value is interpreted as declared regardless of the 
+  quote.
+  For the arguments that can take either 'constant' or 'attribute', the argument 
+  value is interpreted as constant if written within quotes, 
+  otherwise as attribute name.
+
+  So, the following commands will result in an error:
+    % ./send_task "set_leds(7)                 // no attribute with name 7 exist
+    % ./send_task "constant(5, 7)->set_leds(7)"// no attribute with name 7 exist
+
+  But the following command will be fine:
+    % ./send_task "constant('5', 7)->set_leds(5)" 
+
+
+
+4. REPEATING TASK
+-----------------
+
+  There is no looping or branching construct in Tenet tasking language.
+  But it is possible to do "do this every 1 second", or "sample every 1 minute".
+  How do we do this? There are two special tasklets that can do repeated
+  execution of a task. This is like 'forking' in a C program.
+  (We call each execution of a task as 'active_task', which could be thought of 
+   as an iteration of a task, or an instance of a task.)
+
+  repeat(period)        : Execute task every 'period' millisecond.
+                          An aliased tasklet from 'issue(waittime, period, abs)'
+
+  sample(interval, count, repeat, channel, out) : 
+                          sample 'channel' every 'interval' millisecond. 
+                          fill up an attribute with 'count' number of 
+                          samples and tag it as 'out'.
+                          repeat this procedure if 'repeat'.
+
+  No other tasklet can generate a repeated execution of a task.
+
+
+
+5. CONDITIONAL EXECUTION
+------------------------
+
+  There is no looping or branching construct in Tenet tasking language.
+  But it is possible to do "run this task only on node 10", or "send packet
+  only when temperature is above 25". How do we do this?
+  There are two special tasklets that let's you do do conditional execution of 
+  a task.
+
+  deletetaskif(arg)             : delete this task including all its active 
+                                  instances, if arg is non 0
+  deleteactivetaskif(arg)       : delete active instance of this task if arg is 
+                                  non 0
+
+
+
+6. LIST OF ALL TASKLET API
+--------------------------
+
+  Use 'send_task' application (at tenet/apps/send_task) to see the lastest
+  list of all tasklet APIs.
+
+    % ./send_task -a
+
+  As of release 2.0, here is a list of all the tasklets displayed using this method:
+
+ count(attr, value, rate) : create an attribute with value 'value'.
+                            increment 'value' by 'rate' everytime it runs.
+ constant(attr, value)    : create an attribute with a constant 'value'.
+ issue(starttime, period, abs) :
+                          - execute rest of the task after 'starttime',
+                            and periodially with period 'period'.
+                          - 'starttime' is in mote ticks (32768kHz),
+                            'period' is in millisecodns.
+                          - if 'abs' is 1, starttime is globaltime.
+ wait(period)             : wait for 'period' ms once.
+
+ wait(period, repeat)     : ## deprecated. exists for backward compatibility.
+                            if 'repeat', run every 'period' ms
+                            else, wait for 'period' once.
+
+ wait_n_repeat(firstwait, period) :
+                          - wait for 'firstwait' ms,
+                            and then run every 'period' ms.
+ repeat(period)           : repeat rest of the task every 'period' ms
+ alarm(gtime)             : waits until (alarms at) global time 'gtime'
+ globalrepeat(start, period) :
+                          - waits until (alarms at) global time 'start',
+                            and then run every global 'period'.
+                          - 'period' is ms synchronized by timesync
+ get(attr, value)         : get system value 'value' and put it in attr
+                          : legal 'value's are defined in 'tenet_task.h'
+ nexthop(attr)            : put next-hop (routing parent) into attr
+ globaltime(attr)         : put 32bit global time (timesynch'ed) into attr
+ localtime(attr)          : put 32-bit local time of the mote into attr
+ rfpower(attr)            : put RF power into attr
+ rfchannel(attr)          : put RF channel into attr
+ memory_stats(attr)       : put memory stats (RAM,RAMptr,maxRAM,maxRAMptr) in attr
+ leds(attr)               : put the state of the LEDs into attr
+ num_tasks(attr)          : put number of tasks in the mote into attr
+ num_active_tasks(attr)   : put number of active tasks in the mote into attr
+ is_timesync(attr)        : put 1 or 0 (whether time synch'ed) into attr
+ nodeid(attr)             : put TOS_LOCAL_ADDRESS into attr
+ local_address(attr)      : put TOS_LOCAL_ADDRESS into attr
+ platform(attr)           : put platform ('1' for telosb, '2' for micaz) into attr
+ clock_freq(attr)         : put clock frequency into attr
+ master(attr)             : put current routing master into attr
+ logical(result, attr, optype, value) : 
+                          - Perform logical operation specified by optype
+                          - Legal values for 'optype' are :
+                            - 11 or &&   : Logical AND
+                            - 12 or ||   : Logical OR
+                            - 13 or !    : Logical NOT
+ 
+ logical_and(result, attr1, arg)
+ = and(result, attr1, arg) :
+                          - result = attr1 AND arg (constant or attribute)
+ logical_or(result, attr1, arg)
+ = or(result, attr1, arg) :
+                          - result = attr1 OR arg (constant or attribute)
+ logical_not(result, arg)
+ = not(result, arg) :
+                          - result = NOT arg (constant or attribute)
+ bit(result, attr, optype, value) : 
+                          - Perform the bit operation specified by optype
+                          - Legal values for 'optype' are :
+                            - 1 or &   : Bitwise AND
+                            - 2 or |   : Bitwise OR
+                            - 3 or !   : Bitwise NOT
+                            - 4        : Bitwise XOR
+                            - 5        : Bitwise NAND
+                            - 6        : Bitwise NOR
+                            - 7 or <<  : Shift left
+                            - 8 or >>  : Shifh right
+ 
+ bit_and(result, attr1, arg)
+                          - result = attr1 AND arg (constant or attribute)
+ bit_or(result, attr1, arg)
+                          - result = attr1 OR arg (constant or attribute)
+ bit_not(result, arg)
+                          - result = NOT arg (constant or attribute)
+ bit_xor(result, attr1, arg)
+                          - result = attr1 XOR arg (constant or attribute)
+ bit_nand(result, attr1, arg)
+                          - result = attr1 NAND arg (constant or attribute)
+ bit_nor(result, attr1, arg)
+                          - result = attr1 NOR arg (constant or attribute)
+ shiftleft(result, attr1, arg)
+                          - result = attr1 << arg (constant or attribute) 
+ shiftright(result, attr1, arg)
+                          - result = attr1 >> arg (constant or attribute) 
+ arith(result, attr, optype, arg) :
+                          - Perform arithmetic operation 
+                          - Legal values for 'optype' are :
+                            - 1 or +   : ADD
+                            - 2 or -   : SUB
+                            - 3 or *   : MULT
+                            - 4 or /   : DIV
+                            - 5        : DIFF
+                            - 6 or %  : MOD
+                            - 7 or ^   : POW
+ 
+ add(result, attr1, arg)  : result = attr1 + arg (constant or attribute)
+ sub(result, attr1, arg)  : result = attr1 - arg (constant or attribute)
+ mult(result, attr1, arg) : result = attr1 * arg (constant or attribute)
+ div(result, attr1, arg)  : result = attr1 / arg (constant or attribute)
+ diff(result, attr1, arg) : result = |attr1 - arg| (constant or attribute)
+ mod(result, attr1, arg)  : result = attr1 mod arg (constant or attribute)
+ pow(result, attr1, arg)  : result = attr1 ^ arg (constant or attribute)
+ comparison(result, attr, optype, arg),
+ = compare(result, attr, optype, arg) :
+                          - perform comparison operation 
+                          - legal 'optype' is defined in 'tenet_task.h'
+                            - 11 or <    : Less than
+                            - 12 or >    : Greater than
+                            - 13 or ==   : Equal
+                            - 14 or <=   : Less than or equal
+                            - 15 or >=   : Greater than or equal
+                            - 16 or !=   : Not equal
+                            - 21         : Count less than
+                            - 22         : Count greater than
+                            - 23         : Count equal
+                            - 24         : Count less than or equal
+                            - 25         : Count greater than or equal
+                            - 26         : Count not equal
+ 
+ lt(result, attr, arg)      : if ( attr < arg ) result = 1,
+                              else result = 0
+ gt(result, attr, arg)      : if ( attr > arg ) result = 1,
+                              else result = 0
+ eq(result, attr, arg)      : if ( attr == arg ) result = 1
+                              else result = 0
+ leq(result, attr, arg)     : if ( attr <= arg ) result = 1,
+                              else result = 0
+ geq(result, attr, arg)     : if ( attr >= arg ) result = 1,
+                              else result = 0
+ neq(result, attr, arg)     : if ( attr != arg ) result = 1,
+                              else result = 0
+ count_lt(result, attr, arg) : result = number of data in attr that (data < arg)
+ count_gt(result, attr, arg) : result = number of data in attr that (data > arg)
+ count_eq(result, attr, arg) : result = number of data in attr that (data == arg )
+ count_leq(result, attr, arg) : result = number of data in attr that (data <= arg )
+ count_geq(result, attr, arg) : result = number of data in attr that (data >= arg)
+ count_neq(result, attr, arg) : result = number of data in attr that(data != arg)
+ stats(result, attr, optype) :
+                          - perform statistical operation 
+                          - legal 'optype' is defined in 'tenet_task.h'
+                            - 1 : Sum
+                            - 2 : Minimum
+                            - 3 : Maximum
+                            - 4 : Average
+                            - 6 : Count
+ 
+ sum(result, attr)        : result = sum of the data in attr
+ min(result, attr)        : result = minimum of the data in attr
+ max(result, attr)        : result = maximum of the data in attr
+ avg(result, attr)        : result = average of the data in attr
+ cnt(result, attr)        : result = count of the data in attr
+ meandev(result, attr)    : result = mean deviation of the data in attr
+ attribute(result, attr, optype) :
+                          - check an attribute 
+                          - legal 'optype' is defined in 'tenet_task.h'
+                            - 1 : Exist     (result = 1 if attr exists)
+                            - 2 : Not-exist (result = 1 if attr does not exist)
+                            - 3 : Length    (result = length of attr vector(in uint16, not bytes))
+ exist(result, attr)      : result = 1, if attr exists
+ not_exist(result, attr)  : result = 1, if attr does not exist
+ length(result, attr)     : result = length of attr vector
+ actuate(channel, value)  : actuates a particular channel'channel'.
+                            legal 'channel' are defined in 'tenet_task.h'
+ set_rfpower(value)       : set rfpower to 'value' (3~31) or attribute value
+ set_leds(value)          : set leds to constant 'value' or attribute value
+ sounder(value)           : start sounder if 'value' > 0 or attribute value > 0. otherwise stop. 
+ reset_parent()           : reset routing state 
+ storage(attr1, attr2, store) :
+                          - store if 'store', otherwise retrieve.
+                          - get 'attr1' and put it in 'attr2'.
+                          - storage is valid within a task, across active tasks
+ 
+ store(attr1)             : store 'attr1' into storage.
+ store(attr1, attr2)      : store 'attr1' into storage with new name 'attr2'.
+ retrieve(attr1)          : retrieve 'attr1' from storage.
+ retrieve(attr1, attr2)   : retrieve 'attr1' from storage with new name 'attr2'.
+ pack(attr, size)         : pack scalar value 'attr' into a vector of 'size'.
+                            when the vector is full, output it as 'attr'.
+                            otherwise, proceed without any output.
+ pack(attr, size, block)  : same as 'pack(attr, size)' but deletes(blocks)
+                            the active instance if 'block == 1'.
+ pack_n_wait(attr, size)  : same as 'pack(attr, size, 1)'
+ send(type)               : send response using 'type' transport
+                            - 0 : best-effort transport
+                            - 1 : reliable packet transport (E2E_ACK)
+                            - 2 : reliable stream transport
+                            - 3 : rcrt (if compiled with)
+ reboot()                 : reboot the mote
+ deleteattributeif(arg, attr) :
+                          - delete the attribute attr if arg is non 0
+ deleteattribute(attr) :
+                          - delete the attribute attr
+ deleteallattributeif(arg) :
+                          - delete all attributes if arg is non 0
+ deletetaskif(arg)        : delete the task including all active instances
+                            if arg is non 0
+ deleteactivetaskif(arg)  : delete active instance of this task if arg != 0
+ sample(interval, count, repeat, channel, out),
+ sample(interval, count, channel, out),
+ sample(interval, channel, out),
+ sample(channel, out) :
+            - Read ADC channel 'channel' every 'interval' millisec and
+              output 'count' number of samples in an attribute 'out'.
+              Repeat this process if 'repeat'.
+            - Syntax:
+              - sample() tasklet provides four different APIs :
+                [1] sample(interval, count, repeat, channel, out) :
+                    - default API
+                [2] sample(interval, count, channel, out) :
+                    - does not repeat.
+                [3] sample(interval, channel, out) :
+                    - sample 'channel' repeatedly every 'interval'
+                      and output one sample at a time in an attribute.
+                [4] sample(channel, out) :
+                    - sample 'channel' once. one sample, no repeat
+            - Channel list:
+              - Telosb mote
+                - 20 = Humididty Sensor
+                - 21 = Temperature Sensor
+                - 22 = Total Solar Radiation Light Sensor
+                - 23 = Photosynthetically Acitve Radiation Light Sensor
+                - 24 = Internal Temperature Sensor
+                - 25 = Internal Voltage Sensor
+              - MicaZ mote with micasb,
+                - 21 = Temperature Sensor
+                - 25 = Internal Voltage Sensor
+                - 26 = Photo Sensor
+                - 27 = Acceleration Sensor X
+                - 28 = Acceleration Sensor Y
+            - Example: get one sample every 1 sec
+              - slowsample(1000,1,1,22,0x10)
+ voltage(out)             : sample voltage and return in 'out' attribute.
+ image(enFlash, fragSize, imgType, xSize, ySize, out0)
+                               : take a new image and get it from cyclops.
+                                  'enFlash'    - 1 = enable, 0 = disable
+                                  'fragSize'   - num.data.bytes per fragment
+                                  'imgType'    - 16 = B/W, 17 = Color
+                                  'xSize'      - in pixels. e.g. 128
+                                  'ySize'      - in pixels. e.g. 128
+                                  'out0'       - attr_t tag for return data
+ image_snap(flash, imgtype, x, y, out0)
+                               : take an image of 'imgtype' and size (x,y),
+                               : and store it in cyclops-local memory.
+                               : use flash if 'flash'
+ image_get(newImage, enFlash, fragSize, imgType, xSize, ySize, out0)
+                               : get image from cyclops.
+                                  'newImage'   - 0 = take new, 1 = from memory
+                                  'enFlash'    - 1 = enable, 0 = disable
+                                  'fragSize'   - num.data.bytes per fragment
+                                  'imgType'    - 16 = B/W, 17 = Color
+                                  'xSize'      - in pixels. e.g. 128
+                                  'ySize'      - in pixels. e.g. 128
+                                  'out0'       - attr_t tag for return data
+ image_detect(type, use_segment, flash, imgres, out0)
+                               : perform background-subtraction-base object detection
+ image_set_params(offset_x, offset_y, inputSize_x, inputSize_y, testMode, 
+                  exposurePeriod, analog_red, analog_green, analog_blue, 
+                  digital_red, digital_green, digital_blue, runTime, 
+                  out_tag, addr)
+ image_get_params(out_tag, addr)
+ image_reboot()                : reboot cyclops. (cyclops only, not the host mote)
+ image_getRle(newImage, enFlash, fragSize, imgType, xSize, ySize, threshold, out0)
+                               : get image from cyclops.
+                                  'newImage'   - 0 = take new, 1 = from memory
+                                  'enFlash'    - 1 = enable, 0 = disable
+                                  'fragSize'   - num.data.bytes per fragment
+                                  'imgType'    - 16 = B/W, 17 = Color
+                                  'xSize'      - in pixels. e.g. 128
+                                  'ySize'      - in pixels. e.g. 128
+                                  'threshold'  - Lossy RLE threshold (e.g. 20)
+                                  'out0'       - attr_t tag for return data
+ image_getPackBits(newImage, enFlash, fragSize, imgType, xSize, ySize, threshold, out0)
+                               : get image from cyclops.
+                                  'newImage'   - 0 = take new, 1 = from memory
+                                  'enFlash'    - 1 = enable, 0 = disable
+                                  'fragSize'   - num.data.bytes per fragment
+                                  'imgType'    - 16 = B/W, 17 = Color
+                                  'xSize'      - in pixels. e.g. 128
+                                  'ySize'      - in pixels. e.g. 128
+                                  'threshold'  - Lossy RLE threshold (e.g. 20)
+                                  'out0'       - attr_t tag for return data
+ onset_detector(noiseThres, signalThres, startDelay, tag_in, tag_out, tag_info, adaptiveMean)
+                          - perform onset-detection on data with 'tag_in'.
+                          - output filtered data to 'tag_out', and information to 'tag_info'.
+                          - 'startDelay' is the number of learning samples.
+                          - noise mean is updated even in onset state if 'adaptiveMean' is true.
+ firlpfilter(tag_in, tag_out)
+
+

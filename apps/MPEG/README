@@ -1,0 +1,11 @@
+Multiple Pursuer Evader Game
+
+This directory should be used internally.
+It is not part of Tenet distribution software.
+
+It is a Tenet application that depends on the robotics library.
+
+
+Task network to report evader beacon.
+Write estimate evader position to a file.
+Robotics people will do the multiple coordination with that information.

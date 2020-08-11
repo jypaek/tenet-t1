@@ -1,0 +1,193 @@
+
+INTRODUCTION
+------------
+
+This document describes how to compile Tenet mote binaries from the source
+code in the SVN repository. The compiled binaries can be directly installed
+on to the motes, or be used to replace the ones in 'tenet/mote/bin' directory 
+of the binary distribution.
+
+You might want to recompile the mote binary for the following reasons:
+ - Include and use non-default tasklets.
+   (that have been excluded in the binary distribution for code size reasons)
+ - Modifiy the channel frequency used by the motes.
+ - Modifiy the RF transmit power used by the motes.
+ - Change the tree routing protocol used by the motes.
+ - Turn on some debugging features.
+
+This document assumes that you are generally familiar with compiling and 
+installing TinyOS software on the motes, and you already have tinyos-1.x
+development environment setup.
+
+You can also download the compiled Tenet mote binaries from our webpage at
+'http://testbed.usc.edu/tenetbin/'. This can be useful if you are not familir 
+with TinyOS, or if you do not want to go through the effort of downloading 
+and re-compiling Tenet source. (See section 5)
+
+
+
+1. Before you begin
+-------------------
+
+   Tenet mote code is written and compiled using tinyos-1.x. So, to compile
+   the Tenet source code for motes, you will need complete tinyos-1.x 
+   development environment setup on your PC. Specifically, you need to install 
+   tinyos-1.x and all the latest tools required in tinyos-1.x.
+   (Tenet has been ported to tinyos-2.x, documentation and code
+   available at tenet-t2 directory)
+
+   Tenet source code has been tested on following operating systems:
+    - Windows XP (Home or Pro) and Cygwin, or
+    - Linux Fedore Core (3, 4, 5, 6), or
+    - Ubuntu 7.04
+
+   Tenet source code require that you have,
+    - tinyos-1.1.11 or later version of TinyOS 1.x, (CVS head recommended)
+    - make 3.8      or later,
+    - nesC 1.2.7    or later, 
+    - configurations to support telosb and micaz. (refer to http://tinyos.net)
+
+   The following versions of tools have been tested to work: 
+    - nescc   (1.2.7, 1.2.8) 
+    - ncc     (1.2alpha5, 1.2.4) 
+    - avr-gcc (3.4.3) 
+    - msp-gcc (3.2.3)
+    - gcc     (3.4.4, 4,1,2)
+
+   The following mote platforms are valid compilation target in Tenet:
+    - Moteiv's TelosB
+    - Crossbow's TelosB, MicaZ, Mica2, Mica2dot
+
+   NOTE: We recommend installing the latest tools recommended in tinyos-2.x 
+         installation instructions page because the tools (compilers, etc) 
+         for tinyos-2.x are backward compatible with tinyos-1.x.
+         After installing the tools, download a copy of tinyos-1.x from CVS.
+         Please refer to tinyos.net for more information.
+        ('http://enl.usc.edu/~jpaek/tinyos-install.html' can also be helpful.)
+
+
+
+2. Downloading Source from SVN
+------------------------------
+
+   To check out the Tenet repository using SVN tools, use these commands:
+
+     % svn co http://enl.usc.edu/enl/trunk/tenet
+
+
+
+3. Compiling and installing Tenet on the motes
+----------------------------------------------
+
+   In general, the command for compiling and installing Tenet mote binary is 
+   identical to that of a TinyOS application such as Blink.
+
+   To compile and install the Tenet binary on a mote, go to 
+   'tenet/mote/apps/Tenet/' and run the appropriate command from below.
+   To compile and install the BaseStation binary on a mote, go to 
+   'tenet/mote/apps/BaseStation/' and run the appropriate command from below.
+
+    - for telosb,
+
+       % make telosb install.<address> bsl,<dev>
+
+    - for micaz/mica2/mica2dot respectively, (assuming MIB510 programming board)
+
+       % make micaz install.<address> mib510,<dev>
+       % make mica2 install.<address> mib510,<dev>
+       % make mica2dot install.<address> mib510,<dev>
+
+    - <dev> is the name of the serial device that the mote is connected to.
+      (e.g. /dev/ttyS3, or /dev/ttyUSB2, or COM4)
+    - <address> is a small 16bit integer address for the mote. 
+
+   NOTE: If you are using 'telosb' mote, and if you have never installed 
+         'FormatTelosbFlash' on your mote before, you should go to
+         'tenet/mote/test/FormatTelosbFlash/' and install it before
+         installing the Tenet binary.
+
+
+
+4. Example uses of re-compilation of mote binaries
+--------------------------------------------------
+      
+   4.1. Modify the RF channel frequency
+
+      - You can change the RF channel frequency used by the motes.
+        For example, to change the RF channel of the motes with CC2420 radio 
+        (e.g. telosb, micaz), put the following line at the end of the file
+        'tenet/mote/apps/Makerules' and compile and install both 
+        'tenet/mote/apps/Tenet' and 'tenet/mote/apps/BaseStation':
+        
+           CFLAGS += -DCC2420_DEF_CHANNEL=<your_channel>
+
+        where '<your_channel>' is the channel number in the range [13~26].
+
+      
+   4.2. Modify the RF transmit power
+
+      - You can change the RF transmit power used by the motes.
+        For example, to change the TX power of the motes with CC2420 radio 
+        (e.g. telosb, micaz), put the following line at the end of the file
+        'tenet/mote/apps/Makerules' and compile and re-install both 
+        'tenet/mote/apps/Tenet' and 'tenet/mote/apps/BaseStation':
+        
+           CFLAGS += -DCC2420_DEF_RFPOWER=<your_power>
+
+        where '<your_power>' is the channel number in the range [3~31].
+
+
+   4.3. Include the non-default Tenet tasklets
+
+      - There are Tenet tasklets that are not included in Tenet mote binary
+        as default in the binary distribution. The reason for this is usually
+        because of the limited memory available on the motes.
+         - 48KB ROM (code space) is the constraint on 'telosb' motes.
+         - 4KB RAM is the constraint on 'mica2/micaz' motes.
+
+        You may modify the set of tasklets that are included in the Tenet 
+        mote binary by editting the file: 
+
+           'tenet/mote/apps/Tenet/tasklets.h'
+
+        Uncommenting/commenting each 'define' statement of 'INCLUDE_<TASKLET>'
+        includes/excludes each corresponding tasklet.
+
+        For example, you can uncomment the line '#define INCLUDE_SENDRCRT' to
+        include 'SendRCRT' tasklet in the binary.
+
+
+      - For telosb, you might encounter the following error while compiling;
+
+        >msp430-ld: region text is full (build/telosb/main.exe section .text)
+        >msp430-ld: section .vectors [0000ffe0 -> 0000ffff] overlaps section .text [00004000 -> 00011bfb]
+        >msp430-ld: build/telosb/main.exe: section .vectors lma 0xffe0 overlaps previous sections
+        >make: *** [exe0] Error 1
+
+        This happens when the size of the mote binary exceeds the telosb ROM.
+        You must sacrifice some of the tasklets by commenting them out.
+
+
+
+5. Alternative method: Download compiled binary from our webpage
+----------------------------------------------------------------
+
+   You can download the compiled Tenet mote binaries from our webpage at,
+
+      http://testbed.usc.edu/tenetbin/
+
+   This can be useful if you are not familir with TinyOS, or if you do not
+   have tinyos-1.x development environment setup, or if you do not want to go 
+   through the effort of downloading and re-compiling Tenet source.
+   Possible downsides are in the flexibility of things that you can modify,
+   and that the binary might not refect the head of the CVS repository.
+
+    1) Goto "http://testbed.usc.edu/tenetbin/"
+    2) Click on 'tenet/mote/apps/Tenet'
+    3) Select your platform.
+    4) Select the set of tasklets to include in the binary.
+    5) Press 'Compile' button, review your choices, and then press 'Run'.
+       Compiling may take up to several tens of seconds.
+    6) Download the compiled mote binary.
+
+

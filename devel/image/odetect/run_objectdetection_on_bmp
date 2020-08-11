@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# This scripts 
+# 1. takes 2 bmp images as input,
+# 2. reads it and convert it to data file,
+# 3. run background-subtraction-based object detection alg,
+
+#
+# @author: Jeongyeup Paek (jpaek@enl.usc.edu)
+#
+
+if [ $# -lt 2 ]; then
+    echo ""
+    echo "Usage: $0 <bmp-filename> <bmp-filename2>"
+    echo " ex>   $0 hello.bmp hi.bmp"
+    echo ""
+    exit 1;
+fi
+
+bfname1=$1
+bfname2=$2
+
+echo ""
+
+./../bmp/bmp2dat $bfname1 "_tmp_p1.dat"
+./../bmp/bmp2dat $bfname2 "_tmp_p2.dat"
+./odetect "_tmp_p1.dat" "_tmp_p2.dat"
+
+rm "_tmp_p1.dat"
+rm "_tmp_p2.dat"
+

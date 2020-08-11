@@ -1,0 +1,36 @@
+
+# Desc: 1 pioneer robot with laser	
+# CVS: $Id: w_rth.world,v 1.1 2006-04-25 06:06:48 mvieira Exp $
+
+# defines Pioneer-like robots
+include "pioneer.inc"
+
+# defines 'map' object used for floorplans
+include "map.inc"
+
+# set the size of a pixel in meters
+resolution 0.01
+
+# configure the GUI window
+window
+( 
+  size [ 720.0 360.0 ] 
+  center [0.0 0.0] 
+  scale 0.08
+)
+
+# load an environment bitmap
+map
+(
+  bitmap "m_rth.png"
+  size [60 25]
+  boundary 1
+)
+
+# create a robot
+pioneer2dx
+(
+  name "robot"
+  pose [2 1 0]
+  laser()
+)

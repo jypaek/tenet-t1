@@ -1,0 +1,2 @@
+DBG=usr1 ./build/pc/main.exe -r=lossy -rf=lossy.nss -t=15000 -b=1 9 > log &
+

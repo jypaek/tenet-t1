@@ -1,0 +1,3 @@
+./ftsplisten sf testbed.usc.edu 10065 > log1 &
+./ftsplisten sf testbed.usc.edu 10075 > log2 &
+./ftsplisten sf testbed.usc.edu 10085 > log3 &

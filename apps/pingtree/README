@@ -1,0 +1,26 @@
+Pingtree draws the routing tree.
+It is an application that is part of Tenet Distribution
+( http://tenet.usc.edu )
+Pingtree can also show the link quality (LQI) estimation.
+
+RUN
+----
+./pingtree
+
+HELP
+----
+./pingtree -h
+
+Output Example
+--------------
+< Printing the forest >   (num_nodes 2, num_all 3)
+
+  [  1]
+        \--- 2
+        \--- 7
+
+
+
+ < Printing the sorted list values >   (num_nodes 2)
+
+>> 2 7

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]]; then
+    echo "Usage: $0 <nodeid> <device> [options]"
+    echo " ex>   $0 1 /dev/ttyUSB0"
+    exit 1;
+fi
+
+nodeid=$1
+device=$2
+shift
+shift
+
+echo ""
+echo "make micaz install.$nodeid mib510,$device CYCLOPS_HOST=1 CH=26 POWER=31 $*"
+echo ""
+
+make micaz install.$nodeid mib510,$device CYCLOPS_HOST=1 CH=26 POWER=31 $*
+

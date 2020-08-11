@@ -1,0 +1,32 @@
+ResetCount - 
+
+Purpose:
+        ResetCount was made as a simple utility to track mote restarts.  Upon
+startup, the module will increment a counter in flash, and report the number
+back when needed.  Its use was intended to simplify the ordering of packets
+across restarts, but can be used for any number of debugging purposes.  Its
+memory usage is extremely small, only requiring 2 bytes of RAM and 2 bytes of
+ROM.
+
+Usage:
+        Using ResetCount is straight forward.  Make sure its directories are
+included in the compile options.  Then link in as any other module:
+        - Add ResetCountC to your components list
+        - Add <filenameM>.ResetCountI -> ResetCountC in your configuration file
+        - Add interface ResetCountI to your uses list in your M file
+        - Now call ResetCountI.get_count() whenever you need the current reset
+          count
+
+Interface:
+        command uint16_t get_count() - Returns the number of times the mote has
+                been reset.
+        command result_t reset() - Reset the count in flash.  Returns 
+                SUCCESS or FAIL.
+
+Functions:
+        ResetCountM.nc:
+        load_count() - Called from StdControl.start().  Initiates a sequence
+                of checking for a previous count in flash, updating that count
+                (or setting it to 0 if it does not yet exist), then writing the
+                new count back into flash.  Also stores the updated count in
+                memory for fast retrieval via get_count().

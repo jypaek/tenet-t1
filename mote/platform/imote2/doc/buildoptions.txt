@@ -1,0 +1,99 @@
+imote2 build options as of 2/24/2007:
+
+-----CC2420_CHANNEL-----
+Desciption:
+sets the operating channel for the CC2420 radio
+Default:same as for CC2420Radio
+Usage:
+CC2420_CHANNEL=<valid 802.15.4 channel number>
+------------------------
+
+-----TIMESYNC_ROOT_ID-----
+Description:
+Set the node id of the root node for the TimeSync.  This option is only useful
+if TimeSync is compiled into the binary
+Default:
+Usage:
+TIMESYNC_ROOT_ID=<node id of timesync root>
+--------------------------
+
+------AUTO_BATTERY_MONITORING-----
+Description:
+If set to 1, the node will print out its battery voltage every 5 minutes. To
+disable this feature, set to 0
+Default:  1
+Usage:
+AUTO_BATTERY_MONITORING=<1 or 0>
+----------------------------------
+
+-----PROFILE_ATOMIC_TIME-----
+Description:
+If set to any value, the node will print out the maximum amount of time spent
+in atomic blocks in the preceeding 5 second interval.
+Default:  not defined
+Usage:
+PROFILE_ATOMIC_TIME=1
+-----------------------------
+
+-----ASSERT_IRQ_TIME-----
+Description:
+If set to any value, the node will assert out and reboot if any interrupt
+handler takes more than 100us to execute
+Default:  not defined
+Usage:
+ASSERT_IRQ_TIME=1
+-------------------------
+
+
+-----PROFILE_IRQ_TIME-----
+Description:
+If set to any value, the node will print out the maximum amount of time spent
+in interrupt handlers in the preceeding 5 second interval.  The print out
+takes the form of a table where each entry corresponds to time spent in each
+of the first 32 possible interrupt sources to the PXA27X's IRQController
+Default:  not defined
+Usage:
+PROFILE_IRQ_TIME=1
+--------------------------
+
+-----ENABLE_TRACE-----
+Description:
+Controls whether call to the trace function will be dropped before they are
+sent out over either UART or USB.  If set to 0, all messages except for system
+messages will be dropped.
+Default=1
+Usage:
+ENABLE_TRACE=0
+----------------------
+
+-----SYSTEM_CORE_FREQUENCY-----
+Description:
+Sets the default system core frequency for the PXA27X processor.  The
+value that this variable takes must be a valid processor core speed and be
+combined with a valid SYSTEM_BUS_FREQUENCY or it will be ignored and the
+mote will run at 13:13
+Default=13
+Usage: 
+SYSTEM_CORE_FREQUENCY=<13, 104, 208, or 416)
+-------------------------------
+
+-----SYSTEM_BUS_FREQUENCY-----
+Description:
+Sets the default system bus frequency for the PXA27X processor.  The
+value that this variable takes must be a valid bus frequencey for 
+the value set in SYSTEM_CORE_FREQUENCY or it will be ignored and the
+mote will run at 13:13
+Default=13
+Usage: 
+SYSTEM_BUS_FREQUENCY=<13 for 13M core, 104 for 104M or 208M core, 208M for 208M or 416M core)
+------------------------------
+
+-----SYSTEM_USE_SDRAM-----
+Description:
+If set to 1, this define determines whether SDRAM should be enabled for use by the system.  If not
+defined or set to 0, the system will not enable SDRAm, and accesses to SDRAM will likely cause the 
+system to fail
+Default=not defined
+Usage: 
+set in the CFLAGS for your application makefile, eg.g. CFLAGS += -DSYSTEM_USE_SDRAM=1
+------------------------------

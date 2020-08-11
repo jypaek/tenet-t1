@@ -1,0 +1,16 @@
+#ifndef SENSORDATATYPES_H
+#define SENSORDATATYPES_H
+
+enum
+  {
+    LOW_FAULT = -32768L,
+    HIGH_FAULT, 
+    UNDER_RANGE,
+    OVER_RANGE
+  };
+
+#define SENSOR_MAX 32767
+#define SENSOR_MIN (LOW_FAULT+4)
+
+
+#endif

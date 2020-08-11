@@ -1,0 +1,9 @@
+This directory should be used internally.
+It is not part of Tenet distribution software.
+
+Dynamically set the rssi value on the Pursuer Evasion Game application.
+
+Task to get rssi value.
+Fill a vector with rssi.
+Choose k-element as new threshold.
+Task again the network.

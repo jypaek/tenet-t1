@@ -1,0 +1,59 @@
+#!/bin/sh
+
+help_menu()
+{
+    echo "Usage : $0 [options] [first mote id] [last mote id]"
+    echo "Options: "
+    echo "    -c cancel (kill processes in stargate)"
+    echo "    -t assume sf_time -t"
+    exit 1
+}
+
+cancel=0
+sf_time=0
+
+while getopts cti:s:n: opt
+do
+  case "$opt" in
+    c) cancel=1; echo "cancel";;
+    t) sf_time=1; echo "sf_time -t";;
+    \?) help_menu;;
+  esac
+done
+shift $(($OPTIND - 1))
+
+if [ $# -lt 2 ]
+then
+    help_menu
+fi
+
+id_s=$1
+id_l=$2
+n=`expr $id_l - $id_s + 1`
+
+for (( i = $id_s ; i <= $id_l ; i++ ))
+do
+    #port=`ssh jpaek@testbed.usc.edu whichport -n $i`
+    if [ $i -lt 10 ]
+    then
+        port=1000$i
+    else
+        port=100$i
+    fi
+    
+    if [ $cancel -eq 1 ]
+    then
+        pid=`ps -ax | grep testtrdreceive | grep $port | awk '{print $1}'`
+        kill -9 $pid
+        echo "cancelling testtrdreceive on mote $i, port $port"
+    elif [ $sf_time -eq 1 ] 
+    then
+        echo "running testtrdreceive -t on mote $i, port $port"
+        ./testtrdreceive testbed.usc.edu $port -i $i -t &
+    else
+        echo "running testtrdreceive on mote $i, port $port"
+        ./testtrdreceive testbed.usc.edu $port -i $i &
+    fi
+done
+
+

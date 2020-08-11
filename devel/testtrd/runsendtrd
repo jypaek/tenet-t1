@@ -1,0 +1,59 @@
+#!/bin/sh
+
+help_menu()
+{
+    echo "Usage : $0 [-ct] [-i interval] [-s pkt_size] [-n num_pkts] [mote id]"
+    echo "Options: "
+    echo "    -c cancel (kill processes in stargate)"
+    echo "    -t assume -s sf_time"
+    echo "    -i packet injection interval in ms (default = 1000ms) "
+    echo "    -n number of packets to send (default = 100)"
+    echo "    -s payload size of the packet (default = 4) "
+    exit 1
+}
+
+cancel=0
+sf_time=0
+interval=1000
+pkt_size=10
+num_pkts=100
+
+while getopts cti:s:n: opt
+do
+  case "$opt" in
+    c) cancel=1; echo "cancel";;
+    t) sf_time=1; echo "-s sf_time";;
+    i) interval=$OPTARG; echo "interval $interval";;
+    s) pkt_size=$OPTARG; echo "pkt_size $pkt_size";;
+    n) num_pkts=$OPTARG; echo "num_pkts $num_pkts";;
+    \?) help_menu;;
+  esac
+done
+shift $(($OPTIND - 1))
+
+if [ $# -lt 1 ]
+then
+    help_menu
+fi
+
+id=$1
+
+#port=`ssh jpaek@testbed.usc.edu whichport -n $id`
+port=10101
+
+if [ $cancel -eq 1 ]
+then
+    pid=`ps ax | grep trd_testsend | grep $port | awk '{print $1}'`
+    kill -9 $pid
+    echo "cancelling trd_testsend"
+    exit 1;
+fi
+
+if [ $sf_time -eq 1 ] 
+then
+    ./trd_testsend testbed.usc.edu $port $id 221 -i $interval -s $pkt_size -n $num_pkts -t
+else
+    ./trd_testsend testbed.usc.edu $port $id 221 -i $interval -s $pkt_size -n $num_pkts
+fi
+echo "running trd_testsend on mote $id, port $port"
+

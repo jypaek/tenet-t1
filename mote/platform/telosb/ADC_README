@@ -1,0 +1,102 @@
+              Documentation on ADC12 Components for the MSP430    
+ 
+$Revision: 1.1 $
+$Date: 2006-08-18 21:31:22 $
+@author Jan Hauer <hauer@tkn.tu-berlin.de>
+             
+       
+There are three ways to access MSP430's ADC12: 
+
+1) Platform independent applications should use
+   tos/interfaces/ADCSingle.nc and tos/interfaces/ADCMultiple.nc.
+2) Applications written only for the msp430 platform can use
+   tos/platform/msp430/MSP430ADC12Single or tos/platform/msp430/MSP430ADC12Multiple.
+3) The tos/interfaces/ADC and tos/interfaces/ADCControl
+   interfaces are still supported but obsolete, do not use them, because
+   they might not be supported in future. 
+
+The use of 1) and 2) is explained TEP101 in beta/teps/, additional
+information can be found below. The use of 3) (although obsolete) is also
+explained below.
+Generell information about the ADC12 can be found in "MSP430 User's Guide" 
+Chapter 17. 
+
+1) HIL
+Read the section "Hardware Interface Layer (HIL)" in TEP101 in beta/teps/.
+
+2) MSP430ADC12Single and MSP430ADC12Multiple
+In a configuration the MSP430ADC12Single and MSP430ADC12Multiple
+need to be instantiated with unique("MSP430ADC12").
+Read the section "Hardware Adaptation Layer (HAL)" subsection c) in TEP101 
+in beta/teps/.
+Read the explanation in MSP430ADC12.h for how to use bind().
+Look at tinyos-1.x/contrib/eyes/apps/TestADC for an example.
+
+3) ADCC - obsolete -
+ADC and ADCControl are used almost the same way as specified in the 
+interface definitions, there is only a difference in the meaning of the 
+parameters passed to ADCControl.bindPort(). 
+"ADCControl.bindPort(uint8_t port, uint8_t adcPort)" needs to be called once for
+each port that is to be sampled through the ADCC. This binds the interface
+instance number (="port") to the actual input-channel and some other settings
+coded in "adcPort". The reason for this is that any subsequent calls to
+"ADC.getData()" will only require the port-number to identify the corresponding
+settings. The port-number is not passed as a parameter of "ADC.getData()", but
+it is the number of the ADC-interface instance (ADC is a parameterized
+interface). That's why it is necessary to always have the "port"-parameter in
+"ADCControl.bindPort(uint8_t port, uint8_t adcPort)" be the same as the
+interface parameter of the ADC interface through which your component is wired
+to ADCC. Actually this is how the interface ADCControl was intended anyway.
+
+a) The "port" Parameter of ADCControl.bindPort 
+
+Since the "port" parameters reflect the interface instance they must all be
+different starting from 0 (to keep RAM usage to minimum as the interface IDs are
+used to index and allocate an array).  This is achieved by having a separate
+header file for each sensor component and having a unique constant created for
+each sensor with unique("ADCPort"), see below for an example.
+
+b) The "adcPort" Parameter of ADCControl.bindPort 
+
+The parameter "adcPort" encodes the input channel and the reference voltage. If
+reference voltage VREF+ is used it additionally holds information about the
+required value of VREF+ (1.5V or 2.5V). In detail:
+
+ bit 0-3: input channel
+ bit 4-6: reference voltage
+ bit 7: voltage level (ignored if reference voltage != VREF+)
+
+There is a macro ASSOCIATE_ADC_CHANNEL in MSP430ADC12.h that can be used to
+encode this information. In the header file for a sensor component there should
+be a constant that reflects the actual settings for this sensor. An example for
+the "port" and "adcPort" parameters (see InternalVoltage.h):
+
+enum
+{
+  // the "port" parameter and interface id
+  TOS_ADC_INTERNAL_VOLTAGE_PORT = unique("ADCPort"),
+
+  // the actual settings, "adcPort" parameter
+  TOSH_ACTUAL_ADC_INTERNAL_VOLTAGE_PORT = ASSOCIATE_ADC_CHANNEL( 
+           INTERNAL_VOLTAGE, 
+           REFERENCE_VREFplus_AVss, 
+           REFVOLT_LEVEL_1_5), 
+};
+
+
+WIRING EXAMPLE:
+
+first wire ADCC to your configuration:
+
+    MyApp.ADC -> ADCC.ADC[TOS_ADC_INTERNAL_VOLTAGE_PORT];
+    MyApp.ADCControl -> ADCC.ADCControl;
+
+then bind and do the conversion in you module.
+
+    call ADCControl.init();
+    call ADCControl.bindPort(TOS_ADC_INTERNAL_VOLTAGE_PORT, 
+                                   TOSH_ACTUAL_ADC_INTERNAL_VOLTAGE_PORT);
+    call ADC.getData();
+
+    
+

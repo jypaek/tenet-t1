@@ -1,0 +1,4 @@
+cat log1 > log
+cat log2 >> log
+cat log3 >> log
+
