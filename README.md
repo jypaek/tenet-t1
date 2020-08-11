@@ -17,7 +17,7 @@
 
 ## This code was used also for,
 
-2. **"RCRT : Rate-Controlled Reliable Transport Protocol for Wireless Sensor Networks"**, *Jeongyeup Paek, Ramesh Govindan*, ]ACM Transactions on Sensor Networks (TOSN), Vol.7, Issue.3, Article 20](https://dl.acm.org/citation.cfm?id=1807049), September 2010.
+2. **"RCRT : Rate-Controlled Reliable Transport Protocol for Wireless Sensor Networks"**, *Jeongyeup Paek, Ramesh Govindan*, [ACM Transactions on Sensor Networks (TOSN), Vol.7, Issue.3, Article 20](https://dl.acm.org/citation.cfm?id=1807049), September 2010.
 
    - \[[Conference version](https://dl.acm.org/citation.cfm?id=1322293)\] "RCRT: Rate-Controlled Reliable Transport for Wireless Sensor Networks", Jeongyeup Paek, Ramesh Govindan, In Proceedings of the 5th ACM Conference on Embedded Networked Sensor Systems (**SenSys'07**), Nov. 2007.
   
